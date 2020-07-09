@@ -1,6 +1,5 @@
 from ..hdl.cd import *
 
-
 __all__ = ["Settle", "Delay", "Tick", "Passive", "Active"]
 
 
@@ -27,8 +26,7 @@ class Delay(Command):
 class Tick(Command):
     def __init__(self, domain="sync"):
         if not isinstance(domain, (str, ClockDomain)):
-            raise TypeError("Domain must be a string or a ClockDomain instance, not {!r}"
-                            .format(domain))
+            raise TypeError("Domain must be a string or a ClockDomain instance, not {!r}".format(domain))
         assert domain != "comb"
         self.domain = domain
 

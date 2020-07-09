@@ -9,11 +9,9 @@ from ..lib.fifo import *
 
 class FIFOTestCase(FHDLTestCase):
     def test_depth_wrong(self):
-        with self.assertRaises(TypeError,
-                msg="FIFO width must be a non-negative integer, not -1"):
+        with self.assertRaises(TypeError, msg="FIFO width must be a non-negative integer, not -1"):
             FIFOInterface(width=-1, depth=8, fwft=True)
-        with self.assertRaises(TypeError,
-                msg="FIFO depth must be a non-negative integer, not -1"):
+        with self.assertRaises(TypeError, msg="FIFO depth must be a non-negative integer, not -1"):
             FIFOInterface(width=8, depth=-1, fwft=True)
 
     def test_sync_depth(self):
@@ -27,37 +25,41 @@ class FIFOTestCase(FHDLTestCase):
         self.assertEqual(SyncFIFOBuffered(width=8, depth=2).depth, 2)
 
     def test_async_depth(self):
-        self.assertEqual(AsyncFIFO(width=8, depth=0 ).depth, 0)
-        self.assertEqual(AsyncFIFO(width=8, depth=1 ).depth, 1)
-        self.assertEqual(AsyncFIFO(width=8, depth=2 ).depth, 2)
-        self.assertEqual(AsyncFIFO(width=8, depth=3 ).depth, 4)
-        self.assertEqual(AsyncFIFO(width=8, depth=4 ).depth, 4)
+        self.assertEqual(AsyncFIFO(width=8, depth=0).depth, 0)
+        self.assertEqual(AsyncFIFO(width=8, depth=1).depth, 1)
+        self.assertEqual(AsyncFIFO(width=8, depth=2).depth, 2)
+        self.assertEqual(AsyncFIFO(width=8, depth=3).depth, 4)
+        self.assertEqual(AsyncFIFO(width=8, depth=4).depth, 4)
         self.assertEqual(AsyncFIFO(width=8, depth=15).depth, 16)
         self.assertEqual(AsyncFIFO(width=8, depth=16).depth, 16)
         self.assertEqual(AsyncFIFO(width=8, depth=17).depth, 32)
 
     def test_async_depth_wrong(self):
-        with self.assertRaises(ValueError,
-                msg="AsyncFIFO only supports depths that are powers of 2; "
-                    "requested exact depth 15 is not"):
+        with self.assertRaises(
+            ValueError, msg="AsyncFIFO only supports depths that are powers of 2; "
+            "requested exact depth 15 is not"
+        ):
             AsyncFIFO(width=8, depth=15, exact_depth=True)
 
     def test_async_buffered_depth(self):
-        self.assertEqual(AsyncFIFOBuffered(width=8, depth=0 ).depth, 0)
-        self.assertEqual(AsyncFIFOBuffered(width=8, depth=1 ).depth, 2)
-        self.assertEqual(AsyncFIFOBuffered(width=8, depth=2 ).depth, 2)
-        self.assertEqual(AsyncFIFOBuffered(width=8, depth=3 ).depth, 3)
-        self.assertEqual(AsyncFIFOBuffered(width=8, depth=4 ).depth, 5)
+        self.assertEqual(AsyncFIFOBuffered(width=8, depth=0).depth, 0)
+        self.assertEqual(AsyncFIFOBuffered(width=8, depth=1).depth, 2)
+        self.assertEqual(AsyncFIFOBuffered(width=8, depth=2).depth, 2)
+        self.assertEqual(AsyncFIFOBuffered(width=8, depth=3).depth, 3)
+        self.assertEqual(AsyncFIFOBuffered(width=8, depth=4).depth, 5)
         self.assertEqual(AsyncFIFOBuffered(width=8, depth=15).depth, 17)
         self.assertEqual(AsyncFIFOBuffered(width=8, depth=16).depth, 17)
         self.assertEqual(AsyncFIFOBuffered(width=8, depth=17).depth, 17)
         self.assertEqual(AsyncFIFOBuffered(width=8, depth=18).depth, 33)
 
     def test_async_buffered_depth_wrong(self):
-        with self.assertRaises(ValueError,
-                msg="AsyncFIFOBuffered only supports depths that are one higher than powers of 2; "
-                    "requested exact depth 16 is not"):
+        with self.assertRaises(
+            ValueError,
+            msg="AsyncFIFOBuffered only supports depths that are one higher than powers of 2; "
+            "requested exact depth 16 is not"
+        ):
             AsyncFIFOBuffered(width=8, depth=16, exact_depth=True)
+
 
 class FIFOModel(Elaboratable, FIFOInterface):
     """
@@ -75,8 +77,8 @@ class FIFOModel(Elaboratable, FIFOInterface):
         m = Module()
 
         storage = Memory(width=self.width, depth=self.depth)
-        w_port  = m.submodules.w_port = storage.write_port(domain=self.w_domain)
-        r_port  = m.submodules.r_port = storage.read_port (domain="comb")
+        w_port = m.submodules.w_port = storage.write_port(domain=self.w_domain)
+        r_port = m.submodules.r_port = storage.read_port(domain="comb")
 
         produce = Signal(range(self.depth))
         consume = Signal(range(self.depth))
@@ -100,9 +102,7 @@ class FIFOModel(Elaboratable, FIFOInterface):
         with m.If(ResetSignal(self.r_domain) | ResetSignal(self.w_domain)):
             m.d.sync += self.level.eq(0)
         with m.Else():
-            m.d.sync += self.level.eq(self.level
-                + (self.w_rdy & self.w_en)
-                - (self.r_rdy & self.r_en))
+            m.d.sync += self.level.eq(self.level + (self.w_rdy & self.w_en) - (self.r_rdy & self.r_en))
 
         m.d.comb += Assert(ResetSignal(self.r_domain) == ResetSignal(self.w_domain))
 
@@ -123,9 +123,10 @@ class FIFOModelEquivalenceSpec(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.dut  = dut  = self.fifo
-        m.submodules.gold = gold = FIFOModel(width=dut.width, depth=dut.depth, fwft=dut.fwft,
-                                             r_domain=self.r_domain, w_domain=self.w_domain)
+        m.submodules.dut = dut = self.fifo
+        m.submodules.gold = gold = FIFOModel(
+            width=dut.width, depth=dut.depth, fwft=dut.fwft, r_domain=self.r_domain, w_domain=self.w_domain
+        )
 
         m.d.comb += [
             gold.r_en.eq(dut.r_rdy & dut.r_en),
@@ -139,12 +140,10 @@ class FIFOModelEquivalenceSpec(Elaboratable):
             m.d.comb += Assert(dut.level == gold.level)
 
         if dut.fwft:
-            m.d.comb += Assert(dut.r_rdy
-                               .implies(dut.r_data == gold.r_data))
+            m.d.comb += Assert(dut.r_rdy.implies(dut.r_data == gold.r_data))
         else:
-            m.d.comb += Assert((Past(dut.r_rdy, domain=self.r_domain) &
-                                Past(dut.r_en, domain=self.r_domain))
-                               .implies(dut.r_data == gold.r_data))
+            m.d.comb += Assert((Past(dut.r_rdy, domain=self.r_domain)
+                                & Past(dut.r_en, domain=self.r_domain)).implies(dut.r_data == gold.r_data))
 
         return m
 
@@ -156,10 +155,10 @@ class FIFOContractSpec(Elaboratable):
     circumstances, with the exception of reset.
     """
     def __init__(self, fifo, *, r_domain, w_domain, bound):
-        self.fifo     = fifo
+        self.fifo = fifo
         self.r_domain = r_domain
         self.w_domain = w_domain
-        self.bound    = bound
+        self.bound = bound
 
     def elaborate(self, platform):
         m = Module()
@@ -180,17 +179,11 @@ class FIFOContractSpec(Elaboratable):
         with m.FSM(domain=self.w_domain) as write_fsm:
             with m.State("WRITE-1"):
                 with m.If(fifo.w_rdy):
-                    m.d.comb += [
-                        fifo.w_data.eq(entry_1),
-                        fifo.w_en.eq(1)
-                    ]
+                    m.d.comb += [fifo.w_data.eq(entry_1), fifo.w_en.eq(1)]
                     m.next = "WRITE-2"
             with m.State("WRITE-2"):
                 with m.If(fifo.w_rdy):
-                    m.d.comb += [
-                        fifo.w_data.eq(entry_2),
-                        fifo.w_en.eq(1)
-                    ]
+                    m.d.comb += [fifo.w_data.eq(entry_2), fifo.w_en.eq(1)]
                     m.next = "DONE"
             with m.State("DONE"):
                 pass
@@ -224,19 +217,19 @@ class FIFOContractSpec(Elaboratable):
             m.d.comb += Assert(~fifo.r_rdy)
 
         if self.w_domain != "sync" or self.r_domain != "sync":
-            m.d.comb += Assume(Rose(ClockSignal(self.w_domain)) |
-                               Rose(ClockSignal(self.r_domain)))
+            m.d.comb += Assume(Rose(ClockSignal(self.w_domain)) | Rose(ClockSignal(self.r_domain)))
 
         return m
 
 
 class FIFOFormalCase(FHDLTestCase):
     def check_sync_fifo(self, fifo):
-        self.assertFormal(FIFOModelEquivalenceSpec(fifo, r_domain="sync", w_domain="sync"),
-                          mode="bmc", depth=fifo.depth + 1)
-        self.assertFormal(FIFOContractSpec(fifo, r_domain="sync", w_domain="sync",
-                                           bound=fifo.depth * 2 + 1),
-                          mode="hybrid", depth=fifo.depth * 2 + 1)
+        self.assertFormal(FIFOModelEquivalenceSpec(fifo, r_domain="sync", w_domain="sync"), mode="bmc", depth=fifo.depth + 1)
+        self.assertFormal(
+            FIFOContractSpec(fifo, r_domain="sync", w_domain="sync", bound=fifo.depth * 2 + 1),
+            mode="hybrid",
+            depth=fifo.depth * 2 + 1
+        )
 
     def test_sync_fwft_pot(self):
         self.check_sync_fifo(SyncFIFO(width=8, depth=4, fwft=True))
@@ -264,9 +257,11 @@ class FIFOFormalCase(FHDLTestCase):
         # which is not really documented nor is it clear how to use it.
         # self.assertFormal(FIFOModelEquivalenceSpec(fifo, r_domain="read", w_domain="write"),
         #                   mode="bmc", depth=fifo.depth * 3 + 1)
-        self.assertFormal(FIFOContractSpec(fifo, r_domain="read", w_domain="write",
-                                           bound=fifo.depth * 4 + 1),
-                          mode="hybrid", depth=fifo.depth * 4 + 1)
+        self.assertFormal(
+            FIFOContractSpec(fifo, r_domain="read", w_domain="write", bound=fifo.depth * 4 + 1),
+            mode="hybrid",
+            depth=fifo.depth * 4 + 1
+        )
 
     def test_async(self):
         self.check_async_fifo(AsyncFIFO(width=8, depth=4))

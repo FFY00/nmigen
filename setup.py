@@ -7,11 +7,8 @@ def scm_version():
             return version.format_with("")
         else:
             return version.format_choice("+{node}", "+{node}.dirty")
-    return {
-        "relative_to": __file__,
-        "version_scheme": "guess-next-dev",
-        "local_scheme": local_scheme
-    }
+
+    return {"relative_to": __file__, "version_scheme": "guess-next-dev", "local_scheme": local_scheme}
 
 
 def doc_version():
@@ -39,20 +36,18 @@ setup(
     setup_requires=["wheel", "setuptools", "setuptools_scm"],
     install_requires=[
         "importlib_metadata; python_version<'3.8'",  # for __version__ and nmigen._yosys
-        "importlib_resources; python_version<'3.9'", # for nmigen._yosys
-        "pyvcd~=0.2.0", # for nmigen.pysim
-        "Jinja2~=2.11", # for nmigen.build
+        "importlib_resources; python_version<'3.9'",  # for nmigen._yosys
+        "pyvcd~=0.2.0",  # for nmigen.pysim
+        "Jinja2~=2.11",  # for nmigen.build
     ],
     extras_require={
         # this version requirement needs to be synchronized with the one in nmigen.back.verilog!
         "builtin-yosys": ["nmigen-yosys>=0.9.*"],
     },
     packages=find_packages(exclude=["*.test*"]),
-    entry_points={
-        "console_scripts": [
-            "nmigen-rpc = nmigen.rpc:main",
-        ]
-    },
+    entry_points={"console_scripts": [
+        "nmigen-rpc = nmigen.rpc:main",
+    ]},
     project_urls={
         "Documentation": "https://nmigen.info/nmigen/{}".format(doc_version()),
         "Source Code": "https://github.com/nmigen/nmigen",

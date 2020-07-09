@@ -5,12 +5,10 @@ from ...hdl.cd import ClockDomain
 from ...back.pysim import *
 from ...hdl.ir import Fragment
 
-
 __all__ = ["run_simulation", "passive"]
 
 
-def run_simulation(fragment_or_module, generators, clocks={"sync": 10}, vcd_name=None,
-                   special_overrides={}):
+def run_simulation(fragment_or_module, generators, clocks={"sync": 10}, vcd_name=None, special_overrides={}):
     assert not special_overrides
 
     if hasattr(fragment_or_module, "get_fragment"):
@@ -29,10 +27,13 @@ def run_simulation(fragment_or_module, generators, clocks={"sync": 10}, vcd_name
     for domain, period in clocks.items():
         sim.add_clock(period / 1e9, domain=domain)
     for domain, processes in generators.items():
+
         def wrap(process):
             def wrapper():
                 yield from process
+
             return wrapper
+
         if isinstance(processes, Iterable) and not inspect.isgenerator(processes):
             for process in processes:
                 sim.add_sync_process(wrap(process), domain=domain)
@@ -51,4 +52,5 @@ def passive(generator):
     def wrapper(*args, **kwargs):
         yield Passive()
         yield from generator(*args, **kwargs)
+
     return wrapper

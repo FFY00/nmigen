@@ -3,7 +3,6 @@ import argparse
 from .hdl.ir import Fragment
 from .back import rtlil, cxxrtl, verilog, pysim
 
-
 __all__ = ["main"]
 
 
@@ -13,30 +12,45 @@ def main_parser(parser=None):
 
     p_action = parser.add_subparsers(dest="action")
 
-    p_generate = p_action.add_parser("generate",
-        help="generate RTLIL or Verilog from the design")
-    p_generate.add_argument("-t", "--type", dest="generate_type",
-        metavar="LANGUAGE", choices=["il", "cc", "v"],
+    p_generate = p_action.add_parser("generate", help="generate RTLIL or Verilog from the design")
+    p_generate.add_argument(
+        "-t",
+        "--type",
+        dest="generate_type",
+        metavar="LANGUAGE",
+        choices=["il", "cc", "v"],
         default=None,
-        help="generate LANGUAGE (il for RTLIL, v for Verilog; default: %(default)s)")
-    p_generate.add_argument("generate_file",
-        metavar="FILE", type=argparse.FileType("w"), nargs="?",
-        help="write generated code to FILE")
+        help="generate LANGUAGE (il for RTLIL, v for Verilog; default: %(default)s)"
+    )
+    p_generate.add_argument(
+        "generate_file", metavar="FILE", type=argparse.FileType("w"), nargs="?", help="write generated code to FILE"
+    )
 
-    p_simulate = p_action.add_parser(
-        "simulate", help="simulate the design")
-    p_simulate.add_argument("-v", "--vcd-file",
-        metavar="VCD-FILE", type=argparse.FileType("w"),
-        help="write execution trace to VCD-FILE")
-    p_simulate.add_argument("-w", "--gtkw-file",
-        metavar="GTKW-FILE", type=argparse.FileType("w"),
-        help="write GTKWave configuration to GTKW-FILE")
-    p_simulate.add_argument("-p", "--period", dest="sync_period",
-        metavar="TIME", type=float, default=1e-6,
-        help="set 'sync' clock domain period to TIME (default: %(default)s)")
-    p_simulate.add_argument("-c", "--clocks", dest="sync_clocks",
-        metavar="COUNT", type=int, required=True,
-        help="simulate for COUNT 'sync' clock periods")
+    p_simulate = p_action.add_parser("simulate", help="simulate the design")
+    p_simulate.add_argument(
+        "-v", "--vcd-file", metavar="VCD-FILE", type=argparse.FileType("w"), help="write execution trace to VCD-FILE"
+    )
+    p_simulate.add_argument(
+        "-w", "--gtkw-file", metavar="GTKW-FILE", type=argparse.FileType("w"), help="write GTKWave configuration to GTKW-FILE"
+    )
+    p_simulate.add_argument(
+        "-p",
+        "--period",
+        dest="sync_period",
+        metavar="TIME",
+        type=float,
+        default=1e-6,
+        help="set 'sync' clock domain period to TIME (default: %(default)s)"
+    )
+    p_simulate.add_argument(
+        "-c",
+        "--clocks",
+        dest="sync_clocks",
+        metavar="COUNT",
+        type=int,
+        required=True,
+        help="simulate for COUNT 'sync' clock periods"
+    )
 
     return parser
 

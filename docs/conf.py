@@ -9,8 +9,8 @@ release = version.split("+")[0]
 copyright = "2020, nMigen developers"
 
 extensions = [
-	"sphinx.ext.intersphinx",
-	"sphinx.ext.doctest",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.doctest",
     "sphinx.ext.todo",
     "sphinx_rtd_theme",
     "sphinxcontrib.platformpicker",

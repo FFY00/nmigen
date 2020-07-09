@@ -5,10 +5,10 @@ from nmigen.cli import main
 class ALU(Elaboratable):
     def __init__(self, width):
         self.sel = Signal(2)
-        self.a   = Signal(width)
-        self.b   = Signal(width)
-        self.o   = Signal(width)
-        self.co  = Signal()
+        self.a = Signal(width)
+        self.b = Signal(width)
+        self.o = Signal(width)
+        self.co = Signal()
 
     def elaborate(self, platform):
         m = Module()

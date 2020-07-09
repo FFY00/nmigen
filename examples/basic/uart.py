@@ -13,20 +13,20 @@ class UART(Elaboratable):
         assert divisor >= 4
 
         self.data_bits = data_bits
-        self.divisor   = divisor
+        self.divisor = divisor
 
-        self.tx_o    = Signal()
-        self.rx_i    = Signal()
+        self.tx_o = Signal()
+        self.rx_i = Signal()
 
         self.tx_data = Signal(data_bits)
-        self.tx_rdy  = Signal()
-        self.tx_ack  = Signal()
+        self.tx_rdy = Signal()
+        self.tx_ack = Signal()
 
         self.rx_data = Signal(data_bits)
-        self.rx_err  = Signal()
-        self.rx_ovf  = Signal()
-        self.rx_rdy  = Signal()
-        self.rx_ack  = Signal()
+        self.rx_err = Signal()
+        self.rx_ovf = Signal()
+        self.rx_rdy = Signal()
+        self.rx_ack = Signal()
 
     def elaborate(self, platform):
         m = Module()
@@ -89,9 +89,8 @@ class UART(Elaboratable):
 if __name__ == "__main__":
     uart = UART(divisor=5)
     ports = [
-        uart.tx_o, uart.rx_i,
-        uart.tx_data, uart.tx_rdy, uart.tx_ack,
-        uart.rx_data, uart.rx_rdy, uart.rx_err, uart.rx_ovf, uart.rx_ack
+        uart.tx_o, uart.rx_i, uart.tx_data, uart.tx_rdy, uart.tx_ack, uart.rx_data, uart.rx_rdy, uart.rx_err, uart.rx_ovf,
+        uart.rx_ack
     ]
 
     import argparse
@@ -113,6 +112,7 @@ if __name__ == "__main__":
             while True:
                 yield uart.rx_i.eq((yield uart.tx_o))
                 yield
+
         sim.add_sync_process(loopback_proc)
 
         def transmit_proc():
@@ -126,7 +126,8 @@ if __name__ == "__main__":
             yield
             assert not (yield uart.tx_ack)
 
-            for _ in range(uart.divisor * 12): yield
+            for _ in range(uart.divisor * 12):
+                yield
 
             assert (yield uart.tx_ack)
             assert (yield uart.rx_rdy)
@@ -135,6 +136,7 @@ if __name__ == "__main__":
 
             yield uart.rx_ack.eq(1)
             yield
+
         sim.add_sync_process(transmit_proc)
 
         with sim.write_vcd("uart.vcd", "uart.gtkw"):

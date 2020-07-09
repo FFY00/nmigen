@@ -22,7 +22,7 @@ class UpCounter(Elaboratable):
         self.limit = limit
 
         # Ports
-        self.en  = Signal()
+        self.en = Signal()
         self.ovf = Signal()
 
         # State
@@ -40,11 +40,14 @@ class UpCounter(Elaboratable):
                 m.d.sync += self.count.eq(self.count + 1)
 
         return m
+
+
 # --- TEST ---
 from nmigen.back.pysim import Simulator
 
-
 dut = UpCounter(25)
+
+
 def bench():
     # Disabled counter should not overflow.
     yield dut.en.eq(0)
@@ -66,13 +69,12 @@ def bench():
 
 
 sim = Simulator(dut)
-sim.add_clock(1e-6) # 1 MHz
+sim.add_clock(1e-6)  # 1 MHz
 sim.add_sync_process(bench)
 with sim.write_vcd("up_counter.vcd"):
     sim.run()
 # --- CONVERT ---
 from nmigen.back import verilog
-
 
 top = UpCounter(25)
 with open("up_counter.v", "w") as f:

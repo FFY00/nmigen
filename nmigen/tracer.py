@@ -1,7 +1,6 @@
 import sys
 from opcode import opname
 
-
 __all__ = ["NameNotFound", "get_var_name", "get_src_loc"]
 
 
@@ -18,7 +17,7 @@ def get_var_name(depth=2, default=_raise_exception):
     call_index = frame.f_lasti
     while True:
         call_opc = opname[code.co_code[call_index]]
-        if call_opc in ("EXTENDED_ARG",):
+        if call_opc in ("EXTENDED_ARG", ):
             call_index += 2
         else:
             break
@@ -37,8 +36,7 @@ def get_var_name(depth=2, default=_raise_exception):
         elif opc == "STORE_DEREF":
             name_index = int(code.co_code[index + 1])
             return code.co_cellvars[name_index]
-        elif opc in ("LOAD_GLOBAL", "LOAD_NAME", "LOAD_ATTR", "LOAD_FAST", "LOAD_DEREF",
-                     "DUP_TOP", "BUILD_LIST"):
+        elif opc in ("LOAD_GLOBAL", "LOAD_NAME", "LOAD_ATTR", "LOAD_FAST", "LOAD_DEREF", "DUP_TOP", "BUILD_LIST"):
             index += 2
         else:
             if default is _raise_exception:

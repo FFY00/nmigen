@@ -20,9 +20,12 @@ class DSLTestCase(FHDLTestCase):
         self.w1 = Signal(4)
 
     def test_cant_inherit(self):
-        with self.assertRaises(SyntaxError,
-                msg="Instead of inheriting from `Module`, inherit from `Elaboratable` and "
-                    "return a `Module` from the `elaborate(self, platform)` method"):
+        with self.assertRaises(
+            SyntaxError,
+            msg="Instead of inheriting from `Module`, inherit from `Elaboratable` and "
+            "return a `Module` from the `elaborate(self, platform)` method"
+        ):
+
             class ORGate(Module):
                 pass
 
@@ -69,47 +72,46 @@ class DSLTestCase(FHDLTestCase):
 
     def test_d_conflict(self):
         m = Module()
-        with self.assertRaises(SyntaxError,
-                msg="Driver-driver conflict: trying to drive (sig c1) from d.sync, but it "
-                    "is already driven from d.comb"):
+        with self.assertRaises(
+            SyntaxError,
+            msg="Driver-driver conflict: trying to drive (sig c1) from d.sync, but it "
+            "is already driven from d.comb"
+        ):
             m.d.comb += self.c1.eq(1)
             m.d.sync += self.c1.eq(1)
 
     def test_d_wrong(self):
         m = Module()
-        with self.assertRaises(AttributeError,
-                msg="Cannot assign 'd.pix' attribute; did you mean 'd.pix +='?"):
+        with self.assertRaises(AttributeError, msg="Cannot assign 'd.pix' attribute; did you mean 'd.pix +='?"):
             m.d.pix = None
 
     def test_d_asgn_wrong(self):
         m = Module()
-        with self.assertRaises(SyntaxError,
-                msg="Only assignments and property checks may be appended to d.sync"):
+        with self.assertRaises(SyntaxError, msg="Only assignments and property checks may be appended to d.sync"):
             m.d.sync += Switch(self.s1, {})
 
     def test_comb_wrong(self):
         m = Module()
-        with self.assertRaises(AttributeError,
-                msg="'Module' object has no attribute 'comb'; did you mean 'd.comb'?"):
+        with self.assertRaises(AttributeError, msg="'Module' object has no attribute 'comb'; did you mean 'd.comb'?"):
             m.comb += self.c1.eq(1)
 
     def test_sync_wrong(self):
         m = Module()
-        with self.assertRaises(AttributeError,
-                msg="'Module' object has no attribute 'sync'; did you mean 'd.sync'?"):
+        with self.assertRaises(AttributeError, msg="'Module' object has no attribute 'sync'; did you mean 'd.sync'?"):
             m.sync += self.c1.eq(1)
 
     def test_attr_wrong(self):
         m = Module()
-        with self.assertRaises(AttributeError,
-                msg="'Module' object has no attribute 'nonexistentattr'"):
+        with self.assertRaises(AttributeError, msg="'Module' object has no attribute 'nonexistentattr'"):
             m.nonexistentattr
 
     def test_d_suspicious(self):
         m = Module()
-        with self.assertWarns(SyntaxWarning,
-                msg="Using '<module>.d.submodules' would add statements to clock domain "
-                    "'submodules'; did you mean <module>.submodules instead?"):
+        with self.assertWarns(
+            SyntaxWarning,
+            msg="Using '<module>.d.submodules' would add statements to clock domain "
+            "'submodules'; did you mean <module>.submodules instead?"
+        ):
             m.d.submodules += []
 
     def test_clock_signal(self):
@@ -137,29 +139,33 @@ class DSLTestCase(FHDLTestCase):
         o2 = Signal()
         o3 = Signal()
         m.d.sync += o1.eq(Past(i))
-        m.d.pix  += o2.eq(Past(i))
-        m.d.pix  += o3.eq(Past(i, domain="sync"))
+        m.d.pix += o2.eq(Past(i))
+        m.d.pix += o3.eq(Past(i, domain="sync"))
         f = m.elaborate(platform=None)
-        self.assertRepr(f.statements, """
+        self.assertRepr(
+            f.statements, """
         (
             (eq (sig o1) (sample (sig i) @ sync[1]))
             (eq (sig o2) (sample (sig i) @ pix[1]))
             (eq (sig o3) (sample (sig i) @ sync[1]))
         )
-        """)
+        """
+        )
 
     def test_If(self):
         m = Module()
         with m.If(self.s1):
             m.d.comb += self.c1.eq(1)
         m._flush()
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (cat (sig s1))
                 (case 1 (eq (sig c1) (const 1'd1)))
             )
         )
-        """)
+        """
+        )
 
     def test_If_Elif(self):
         m = Module()
@@ -168,14 +174,16 @@ class DSLTestCase(FHDLTestCase):
         with m.Elif(self.s2):
             m.d.sync += self.c2.eq(0)
         m._flush()
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (cat (sig s1) (sig s2))
                 (case -1 (eq (sig c1) (const 1'd1)))
                 (case 1- (eq (sig c2) (const 1'd0)))
             )
         )
-        """)
+        """
+        )
 
     def test_If_Elif_Else(self):
         m = Module()
@@ -186,7 +194,8 @@ class DSLTestCase(FHDLTestCase):
         with m.Else():
             m.d.comb += self.c3.eq(1)
         m._flush()
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (cat (sig s1) (sig s2))
                 (case -1 (eq (sig c1) (const 1'd1)))
@@ -194,7 +203,8 @@ class DSLTestCase(FHDLTestCase):
                 (default (eq (sig c3) (const 1'd1)))
             )
         )
-        """)
+        """
+        )
 
     def test_If_If(self):
         m = Module()
@@ -203,7 +213,8 @@ class DSLTestCase(FHDLTestCase):
         with m.If(self.s2):
             m.d.comb += self.c2.eq(1)
         m._flush()
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (cat (sig s1))
                 (case 1 (eq (sig c1) (const 1'd1)))
@@ -212,7 +223,8 @@ class DSLTestCase(FHDLTestCase):
                 (case 1 (eq (sig c2) (const 1'd1)))
             )
         )
-        """)
+        """
+        )
 
     def test_If_nested_If(self):
         m = Module()
@@ -221,7 +233,8 @@ class DSLTestCase(FHDLTestCase):
             with m.If(self.s2):
                 m.d.comb += self.c2.eq(1)
         m._flush()
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (cat (sig s1))
                 (case 1 (eq (sig c1) (const 1'd1))
@@ -231,7 +244,8 @@ class DSLTestCase(FHDLTestCase):
                 )
             )
         )
-        """)
+        """
+        )
 
     def test_If_dangling_Else(self):
         m = Module()
@@ -242,7 +256,8 @@ class DSLTestCase(FHDLTestCase):
         with m.Else():
             m.d.comb += self.c3.eq(1)
         m._flush()
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (cat (sig s1))
                 (case 1
@@ -256,19 +271,18 @@ class DSLTestCase(FHDLTestCase):
                 )
             )
         )
-        """)
+        """
+        )
 
     def test_Elif_wrong(self):
         m = Module()
-        with self.assertRaises(SyntaxError,
-                msg="Elif without preceding If"):
+        with self.assertRaises(SyntaxError, msg="Elif without preceding If"):
             with m.Elif(self.s2):
                 pass
 
     def test_Else_wrong(self):
         m = Module()
-        with self.assertRaises(SyntaxError,
-                msg="Else without preceding If/Elif"):
+        with self.assertRaises(SyntaxError, msg="Else without preceding If/Elif"):
             with m.Else():
                 pass
 
@@ -277,50 +291,53 @@ class DSLTestCase(FHDLTestCase):
         with m.If(self.w1):
             m.d.comb += self.c1.eq(1)
         m._flush()
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (cat (b (sig w1)))
                 (case 1 (eq (sig c1) (const 1'd1)))
             )
         )
-        """)
+        """
+        )
 
     def test_If_signed_suspicious(self):
         m = Module()
-        with self.assertWarns(SyntaxWarning,
-                msg="Signed values in If/Elif conditions usually result from inverting Python "
-                    "booleans with ~, which leads to unexpected results. Replace `~flag` with "
-                    "`not flag`. (If this is a false positive, silence this warning with "
-                    "`m.If(x)` → `m.If(x.bool())`.)"):
-            with m.If(~True):
+        with self.assertWarns(
+            SyntaxWarning,
+            msg="Signed values in If/Elif conditions usually result from inverting Python "
+            "booleans with ~, which leads to unexpected results. Replace `~flag` with "
+            "`not flag`. (If this is a false positive, silence this warning with "
+            "`m.If(x)` → `m.If(x.bool())`.)"
+        ):
+            with m.If(~ True):
                 pass
 
     def test_Elif_signed_suspicious(self):
         m = Module()
         with m.If(0):
             pass
-        with self.assertWarns(SyntaxWarning,
-                msg="Signed values in If/Elif conditions usually result from inverting Python "
-                    "booleans with ~, which leads to unexpected results. Replace `~flag` with "
-                    "`not flag`. (If this is a false positive, silence this warning with "
-                    "`m.If(x)` → `m.If(x.bool())`.)"):
-            with m.Elif(~True):
+        with self.assertWarns(
+            SyntaxWarning,
+            msg="Signed values in If/Elif conditions usually result from inverting Python "
+            "booleans with ~, which leads to unexpected results. Replace `~flag` with "
+            "`not flag`. (If this is a false positive, silence this warning with "
+            "`m.If(x)` → `m.If(x.bool())`.)"
+        ):
+            with m.Elif(~ True):
                 pass
 
     def test_if_If_Elif_Else(self):
         m = Module()
-        with self.assertRaises(SyntaxError,
-                msg="`if m.If(...):` does not work; use `with m.If(...)`"):
+        with self.assertRaises(SyntaxError, msg="`if m.If(...):` does not work; use `with m.If(...)`"):
             if m.If(0):
                 pass
         with m.If(0):
             pass
-        with self.assertRaises(SyntaxError,
-                msg="`if m.Elif(...):` does not work; use `with m.Elif(...)`"):
+        with self.assertRaises(SyntaxError, msg="`if m.Elif(...):` does not work; use `with m.Elif(...)`"):
             if m.Elif(0):
                 pass
-        with self.assertRaises(SyntaxError,
-                msg="`if m.Else(...):` does not work; use `with m.Else(...)`"):
+        with self.assertRaises(SyntaxError, msg="`if m.Else(...):` does not work; use `with m.Else(...)`"):
             if m.Else():
                 pass
 
@@ -334,7 +351,8 @@ class DSLTestCase(FHDLTestCase):
             with m.Case("1 0--"):
                 m.d.comb += self.c2.eq(1)
         m._flush()
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (sig w1)
                 (case 0011 (eq (sig c1) (const 1'd1)))
@@ -342,7 +360,8 @@ class DSLTestCase(FHDLTestCase):
                 (case 10-- (eq (sig c2) (const 1'd1)))
             )
         )
-        """)
+        """
+        )
 
     def test_Switch_default_Case(self):
         m = Module()
@@ -352,14 +371,16 @@ class DSLTestCase(FHDLTestCase):
             with m.Case():
                 m.d.comb += self.c2.eq(1)
         m._flush()
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (sig w1)
                 (case 0011 (eq (sig c1) (const 1'd1)))
                 (default (eq (sig c2) (const 1'd1)))
             )
         )
-        """)
+        """
+        )
 
     def test_Switch_default_Default(self):
         m = Module()
@@ -369,14 +390,16 @@ class DSLTestCase(FHDLTestCase):
             with m.Default():
                 m.d.comb += self.c2.eq(1)
         m._flush()
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (sig w1)
                 (case 0011 (eq (sig c1) (const 1'd1)))
                 (default (eq (sig c2) (const 1'd1)))
             )
         )
-        """)
+        """
+        )
 
     def test_Switch_const_test(self):
         m = Module()
@@ -384,48 +407,57 @@ class DSLTestCase(FHDLTestCase):
             with m.Case(1):
                 m.d.comb += self.c1.eq(1)
         m._flush()
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (const 1'd1)
                 (case 1 (eq (sig c1) (const 1'd1)))
             )
         )
-        """)
+        """
+        )
 
     def test_Switch_enum(self):
         class Color(Enum):
-            RED  = 1
+            RED = 1
             BLUE = 2
+
         m = Module()
         se = Signal(Color)
         with m.Switch(se):
             with m.Case(Color.RED):
                 m.d.comb += self.c1.eq(1)
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (sig se)
                 (case 01 (eq (sig c1) (const 1'd1)))
             )
         )
-        """)
+        """
+        )
 
     def test_Case_width_wrong(self):
         class Color(Enum):
             RED = 0b10101010
+
         m = Module()
         with m.Switch(self.w1):
-            with self.assertRaises(SyntaxError,
-                    msg="Case pattern '--' must have the same width as switch value (which is 4)"):
+            with self.assertRaises(SyntaxError, msg="Case pattern '--' must have the same width as switch value (which is 4)"):
                 with m.Case("--"):
                     pass
-            with self.assertWarns(SyntaxWarning,
-                    msg="Case pattern '10110' is wider than switch value (which has width 4); "
-                        "comparison will never be true"):
+            with self.assertWarns(
+                SyntaxWarning,
+                msg="Case pattern '10110' is wider than switch value (which has width 4); "
+                "comparison will never be true"
+            ):
                 with m.Case(0b10110):
                     pass
-            with self.assertWarns(SyntaxWarning,
-                    msg="Case pattern '10101010' (Color.RED) is wider than switch value "
-                        "(which has width 4); comparison will never be true"):
+            with self.assertWarns(
+                SyntaxWarning,
+                msg="Case pattern '10101010' (Color.RED) is wider than switch value "
+                "(which has width 4); comparison will never be true"
+            ):
                 with m.Case(Color.RED):
                     pass
         self.assertRepr(m._statements, """
@@ -437,33 +469,34 @@ class DSLTestCase(FHDLTestCase):
     def test_Case_bits_wrong(self):
         m = Module()
         with m.Switch(self.w1):
-            with self.assertRaises(SyntaxError,
-                    msg="Case pattern 'abc' must consist of 0, 1, and - (don't care) bits, "
-                        "and may include whitespace"):
+            with self.assertRaises(
+                SyntaxError,
+                msg="Case pattern 'abc' must consist of 0, 1, and - (don't care) bits, "
+                "and may include whitespace"
+            ):
                 with m.Case("abc"):
                     pass
 
     def test_Case_pattern_wrong(self):
         m = Module()
         with m.Switch(self.w1):
-            with self.assertRaises(SyntaxError,
-                    msg="Case pattern must be an integer, a string, or an enumeration, not 1.0"):
+            with self.assertRaises(SyntaxError, msg="Case pattern must be an integer, a string, or an enumeration, not 1.0"):
                 with m.Case(1.0):
                     pass
 
     def test_Case_outside_Switch_wrong(self):
         m = Module()
-        with self.assertRaises(SyntaxError,
-                msg="Case is not permitted outside of Switch"):
+        with self.assertRaises(SyntaxError, msg="Case is not permitted outside of Switch"):
             with m.Case():
                 pass
 
     def test_If_inside_Switch_wrong(self):
         m = Module()
         with m.Switch(self.s1):
-            with self.assertRaises(SyntaxError,
-                    msg="If is not permitted directly inside of Switch; "
-                        "it is permitted inside of Switch Case"):
+            with self.assertRaises(
+                SyntaxError, msg="If is not permitted directly inside of Switch; "
+                "it is permitted inside of Switch Case"
+            ):
                 with m.If(self.s2):
                     pass
 
@@ -481,7 +514,8 @@ class DSLTestCase(FHDLTestCase):
                 with m.If(c):
                     m.next = "FIRST"
         m._flush()
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (sig fsm_state)
                 (case 0
@@ -497,24 +531,23 @@ class DSLTestCase(FHDLTestCase):
                 )
             )
         )
-        """)
-        self.assertEqual({repr(k): v for k, v in m._driving.items()}, {
-            "(sig a)": None,
-            "(sig fsm_state)": "sync",
-            "(sig b)": "sync",
-        })
+        """
+        )
+        self.assertEqual({repr(k): v
+                          for k, v in m._driving.items()}, {
+                              "(sig a)": None,
+                              "(sig fsm_state)": "sync",
+                              "(sig b)": "sync",
+                          })
 
         frag = m.elaborate(platform=None)
-        fsm  = frag.find_generated("fsm")
+        fsm = frag.find_generated("fsm")
         self.assertIsInstance(fsm.state, Signal)
         self.assertEqual(fsm.encoding, OrderedDict({
             "FIRST": 0,
             "SECOND": 1,
         }))
-        self.assertEqual(fsm.decoding, OrderedDict({
-            0: "FIRST",
-            1: "SECOND"
-        }))
+        self.assertEqual(fsm.decoding, OrderedDict({0: "FIRST", 1: "SECOND"}))
 
     def test_FSM_reset(self):
         a = Signal()
@@ -526,7 +559,8 @@ class DSLTestCase(FHDLTestCase):
             with m.State("SECOND"):
                 m.next = "FIRST"
         m._flush()
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (sig fsm_state)
                 (case 0
@@ -538,7 +572,8 @@ class DSLTestCase(FHDLTestCase):
                 )
             )
         )
-        """)
+        """
+        )
 
     def test_FSM_ongoing(self):
         a = Signal()
@@ -554,7 +589,8 @@ class DSLTestCase(FHDLTestCase):
         m._flush()
         self.assertEqual(m._generated["fsm"].state.reset, 1)
         self.maxDiff = 10000
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (eq (sig b) (== (sig fsm_state) (const 1'd0)))
             (eq (sig a) (== (sig fsm_state) (const 1'd1)))
@@ -565,7 +601,8 @@ class DSLTestCase(FHDLTestCase):
                 )
             )
         )
-        """)
+        """
+        )
 
     def test_FSM_empty(self):
         m = Module()
@@ -577,15 +614,13 @@ class DSLTestCase(FHDLTestCase):
 
     def test_FSM_wrong_domain(self):
         m = Module()
-        with self.assertRaises(ValueError,
-                msg="FSM may not be driven by the 'comb' domain"):
+        with self.assertRaises(ValueError, msg="FSM may not be driven by the 'comb' domain"):
             with m.FSM(domain="comb"):
                 pass
 
     def test_FSM_wrong_undefined(self):
         m = Module()
-        with self.assertRaises(NameError,
-                msg="FSM state 'FOO' is referenced but not defined"):
+        with self.assertRaises(NameError, msg="FSM state 'FOO' is referenced but not defined"):
             with m.FSM() as fsm:
                 fsm.ongoing("FOO")
 
@@ -594,21 +629,17 @@ class DSLTestCase(FHDLTestCase):
         with m.FSM():
             with m.State("FOO"):
                 pass
-            with self.assertRaises(NameError,
-                    msg="FSM state 'FOO' is already defined"):
+            with self.assertRaises(NameError, msg="FSM state 'FOO' is already defined"):
                 with m.State("FOO"):
                     pass
 
     def test_FSM_wrong_next(self):
         m = Module()
-        with self.assertRaises(SyntaxError,
-                msg="Only assignment to `m.next` is permitted"):
+        with self.assertRaises(SyntaxError, msg="Only assignment to `m.next` is permitted"):
             m.next
-        with self.assertRaises(SyntaxError,
-                msg="`m.next = <...>` is only permitted inside an FSM state"):
+        with self.assertRaises(SyntaxError, msg="`m.next = <...>` is only permitted inside an FSM state"):
             m.next = "FOO"
-        with self.assertRaises(SyntaxError,
-                msg="`m.next = <...>` is only permitted inside an FSM state"):
+        with self.assertRaises(SyntaxError, msg="`m.next = <...>` is only permitted inside an FSM state"):
             with m.FSM():
                 m.next = "FOO"
 
@@ -617,9 +648,10 @@ class DSLTestCase(FHDLTestCase):
         with m.FSM():
             with m.State("FOO"):
                 pass
-            with self.assertRaises(SyntaxError,
-                    msg="If is not permitted directly inside of FSM; "
-                        "it is permitted inside of FSM State"):
+            with self.assertRaises(
+                SyntaxError, msg="If is not permitted directly inside of FSM; "
+                "it is permitted inside of FSM State"
+            ):
                 with m.If(self.s2):
                     pass
 
@@ -628,14 +660,16 @@ class DSLTestCase(FHDLTestCase):
         with m.If(self.w1):
             m.d.comb += self.c1.eq(1)
         m.d.comb += self.c2.eq(1)
-        self.assertRepr(m._statements, """
+        self.assertRepr(
+            m._statements, """
         (
             (switch (cat (b (sig w1)))
                 (case 1 (eq (sig c1) (const 1'd1)))
             )
             (eq (sig c2) (const 1'd1))
         )
-        """)
+        """
+        )
 
     def test_submodule_anon(self):
         m1 = Module()
@@ -668,11 +702,9 @@ class DSLTestCase(FHDLTestCase):
 
     def test_submodule_wrong(self):
         m = Module()
-        with self.assertRaises(TypeError,
-                msg="Trying to add 1, which does not implement .elaborate(), as a submodule"):
+        with self.assertRaises(TypeError, msg="Trying to add 1, which does not implement .elaborate(), as a submodule"):
             m.submodules.foo = 1
-        with self.assertRaises(TypeError,
-                msg="Trying to add 1, which does not implement .elaborate(), as a submodule"):
+        with self.assertRaises(TypeError, msg="Trying to add 1, which does not implement .elaborate(), as a submodule"):
             m.submodules += 1
 
     def test_submodule_named_conflict(self):
@@ -716,24 +748,20 @@ class DSLTestCase(FHDLTestCase):
 
     def test_domain_add_wrong(self):
         m = Module()
-        with self.assertRaises(TypeError,
-                msg="Only clock domains may be added to `m.domains`, not 1"):
+        with self.assertRaises(TypeError, msg="Only clock domains may be added to `m.domains`, not 1"):
             m.domains.foo = 1
-        with self.assertRaises(TypeError,
-                msg="Only clock domains may be added to `m.domains`, not 1"):
+        with self.assertRaises(TypeError, msg="Only clock domains may be added to `m.domains`, not 1"):
             m.domains += 1
 
     def test_domain_add_wrong_name(self):
         m = Module()
-        with self.assertRaises(NameError,
-                msg="Clock domain name 'bar' must match name in `m.domains.foo += ...` syntax"):
+        with self.assertRaises(NameError, msg="Clock domain name 'bar' must match name in `m.domains.foo += ...` syntax"):
             m.domains.foo = ClockDomain("bar")
 
     def test_domain_add_wrong_duplicate(self):
         m = Module()
         m.domains += ClockDomain("foo")
-        with self.assertRaises(NameError,
-                msg="Clock domain named 'foo' already exists"):
+        with self.assertRaises(NameError, msg="Clock domain named 'foo' already exists"):
             m.domains += ClockDomain("foo")
 
     def test_lower(self):
@@ -750,20 +778,17 @@ class DSLTestCase(FHDLTestCase):
             (eq (sig c1) (sig s1))
         )
         """)
-        self.assertEqual(f1.drivers, {
-            None: SignalSet((self.c1,))
-        })
+        self.assertEqual(f1.drivers, {None: SignalSet((self.c1, ))})
         self.assertEqual(len(f1.subfragments), 1)
         (f2, f2_name), = f1.subfragments
         self.assertEqual(f2_name, "foo")
-        self.assertRepr(f2.statements, """
+        self.assertRepr(
+            f2.statements, """
         (
             (eq (sig c2) (sig s2))
             (eq (sig c3) (sig s3))
         )
-        """)
-        self.assertEqual(f2.drivers, {
-            None: SignalSet((self.c2,)),
-            "sync": SignalSet((self.c3,))
-        })
+        """
+        )
+        self.assertEqual(f2.drivers, {None: SignalSet((self.c2, )), "sync": SignalSet((self.c3, ))})
         self.assertEqual(len(f2.subfragments), 0)

@@ -1,8 +1,8 @@
 from ..._utils import deprecated, extend
-from ...lib.fifo import (FIFOInterface as NativeFIFOInterface,
-  SyncFIFO as NativeSyncFIFO, SyncFIFOBuffered as NativeSyncFIFOBuffered,
-  AsyncFIFO as NativeAsyncFIFO, AsyncFIFOBuffered as NativeAsyncFIFOBuffered)
-
+from ...lib.fifo import (
+    FIFOInterface as NativeFIFOInterface, SyncFIFO as NativeSyncFIFO, SyncFIFOBuffered as NativeSyncFIFOBuffered, AsyncFIFO as
+    NativeAsyncFIFO, AsyncFIFOBuffered as NativeAsyncFIFOBuffered
+)
 
 __all__ = ["_FIFOInterface", "SyncFIFO", "SyncFIFOBuffered", "AsyncFIFO", "AsyncFIFOBuffered"]
 
@@ -108,6 +108,7 @@ def read(self):
     yield self.r_en.eq(0)
     yield
     return value
+
 
 @extend(NativeFIFOInterface)
 def write(self, data):

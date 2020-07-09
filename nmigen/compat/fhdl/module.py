@@ -3,7 +3,6 @@ from collections.abc import Iterable
 from ..._utils import flatten, deprecated
 from ...hdl import dsl, ir
 
-
 __all__ = ["Module", "FinalizeError"]
 
 
@@ -136,8 +135,7 @@ class CompatModule(ir.Elaboratable):
             self.get_fragment_called = False
             return self.get_fragment_called
         else:
-            raise AttributeError("'{}' object has no attribute '{}'"
-                                 .format(type(self).__name__, name))
+            raise AttributeError("'{}' object has no attribute '{}'".format(type(self).__name__, name))
 
     def finalize(self, *args, **kwargs):
         def finalize_submodules():

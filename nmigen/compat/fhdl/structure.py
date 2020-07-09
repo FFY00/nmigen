@@ -5,17 +5,16 @@ from collections import OrderedDict
 from ...utils import bits_for
 from ..._utils import deprecated, extend
 from ...hdl import ast
-from ...hdl.ast import (DUID,
-                        Shape, signed, unsigned,
-                        Value, Const, C, Mux, Slice as _Slice, Part, Cat, Repl,
-                        Signal as NativeSignal,
-                        ClockSignal, ResetSignal,
-                        Array, ArrayProxy as _ArrayProxy)
+from ...hdl.ast import (
+    DUID, Shape, signed, unsigned, Value, Const, C, Mux, Slice as _Slice, Part, Cat, Repl, Signal as NativeSignal, ClockSignal,
+    ResetSignal, Array, ArrayProxy as _ArrayProxy
+)
 from ...hdl.cd import ClockDomain
 
-
-__all__ = ["DUID", "wrap", "Mux", "Cat", "Replicate", "Constant", "C", "Signal", "ClockSignal",
-           "ResetSignal", "If", "Case", "Array", "ClockDomain"]
+__all__ = [
+    "DUID", "wrap", "Mux", "Cat", "Replicate", "Constant", "C", "Signal", "ClockSignal", "ResetSignal", "If", "Case", "Array",
+    "ClockDomain"
+]
 
 
 @deprecated("instead of `wrap`, use `Value.cast`")
@@ -24,14 +23,28 @@ def wrap(v):
 
 
 class CompatSignal(NativeSignal):
-    def __init__(self, bits_sign=None, name=None, variable=False, reset=0,
-                 reset_less=False, name_override=None, min=None, max=None,
-                 related=None, attr=None, src_loc_at=0, **kwargs):
+    def __init__(
+        self,
+        bits_sign=None,
+        name=None,
+        variable=False,
+        reset=0,
+        reset_less=False,
+        name_override=None,
+        min=None,
+        max=None,
+        related=None,
+        attr=None,
+        src_loc_at=0,
+        **kwargs
+    ):
         if min is not None or max is not None:
-            warnings.warn("instead of `Signal(min={min}, max={max})`, "
-                          "use `Signal(range({min}, {max}))`"
-                          .format(min=min or 0, max=max or 2),
-                          DeprecationWarning, stacklevel=2 + src_loc_at)
+            warnings.warn(
+                "instead of `Signal(min={min}, max={max})`, "
+                "use `Signal(range({min}, {max}))`".format(min=min or 0, max=max or 2),
+                DeprecationWarning,
+                stacklevel=2 + src_loc_at
+            )
 
         if bits_sign is None:
             if min is None:
@@ -40,8 +53,7 @@ class CompatSignal(NativeSignal):
                 max = 2
             max -= 1  # make both bounds inclusive
             if min > max:
-                raise ValueError("Lower bound {} should be less or equal to higher bound {}"
-                                 .format(min, max + 1))
+                raise ValueError("Lower bound {} should be less or equal to higher bound {}".format(min, max + 1))
             sign = min < 0 or max < 0
             if min == max:
                 bits = 0
@@ -53,9 +65,15 @@ class CompatSignal(NativeSignal):
                 raise ValueError("Only one of bits/signedness or bounds may be specified")
             shape = bits_sign
 
-        super().__init__(shape=shape, name=name_override or name,
-                         reset=reset, reset_less=reset_less,
-                         attrs=attr, src_loc_at=1 + src_loc_at, **kwargs)
+        super().__init__(
+            shape=shape,
+            name=name_override or name,
+            reset=reset,
+            reset_less=reset_less,
+            attrs=attr,
+            src_loc_at=1 + src_loc_at,
+            **kwargs
+        )
 
 
 Signal = CompatSignal
@@ -125,15 +143,15 @@ class If(ast.Switch):
         cond = Value.cast(cond)
         if len(cond) != 1:
             cond = cond.bool()
-        super().__init__(cond, {("1",): ast.Statement.cast(stmts)})
+        super().__init__(cond, {("1", ): ast.Statement.cast(stmts)})
 
     @deprecated("instead of `.Elif(cond, ...)`, use `with m.Elif(cond): ...`")
     def Elif(self, cond, *stmts):
         cond = Value.cast(cond)
         if len(cond) != 1:
             cond = cond.bool()
-        self.cases = OrderedDict((("-" + k,), v) for (k,), v in self.cases.items())
-        self.cases[("1" + "-" * len(self.test),)] = ast.Statement.cast(stmts)
+        self.cases = OrderedDict((("-" + k, ), v) for (k, ), v in self.cases.items())
+        self.cases[("1" + "-" * len(self.test), )] = ast.Statement.cast(stmts)
         self.test = Cat(self.test, cond)
         return self
 
@@ -144,17 +162,18 @@ class If(ast.Switch):
 
 
 class Case(ast.Switch):
-    @deprecated("instead of `Case(test, { value: stmts })`, use `with m.Switch(test):` and "
-                "`with m.Case(value): stmts`; instead of `\"default\": stmts`, use "
-                "`with m.Case(): stmts`")
+    @deprecated(
+        "instead of `Case(test, { value: stmts })`, use `with m.Switch(test):` and "
+        "`with m.Case(value): stmts`; instead of `\"default\": stmts`, use "
+        "`with m.Case(): stmts`"
+    )
     def __init__(self, test, cases):
         new_cases = []
-        default   = None
+        default = None
         for k, v in cases.items():
             if isinstance(k, (bool, int)):
                 k = Const(k)
-            if (not isinstance(k, Const)
-                    and not (isinstance(k, str) and k == "default")):
+            if (not isinstance(k, Const) and not (isinstance(k, str) and k == "default")):
                 raise TypeError("Case object is not a Migen constant")
             if isinstance(k, str) and k == "default":
                 default = v
@@ -166,19 +185,16 @@ class Case(ast.Switch):
             new_cases.append((None, default))
         super().__init__(test, OrderedDict(new_cases))
 
-    @deprecated("instead of `Case(...).makedefault()`, use an explicit default case: "
-                "`with m.Case(): ...`")
+    @deprecated("instead of `Case(...).makedefault()`, use an explicit default case: " "`with m.Case(): ...`")
     def makedefault(self, key=None):
         if key is None:
             for choice in self.cases.keys():
-                if (key is None
-                        or (isinstance(choice, str) and choice == "default")
-                        or choice > key):
+                if (key is None or (isinstance(choice, str) and choice == "default") or choice > key):
                     key = choice
         elif isinstance(key, str) and key == "default":
             key = ()
         else:
-            key = ("{:0{}b}".format(ast.Value.cast(key).value, len(self.test)),)
+            key = ("{:0{}b}".format(ast.Value.cast(key).value, len(self.test)), )
         stmts = self.cases[key]
         del self.cases[key]
         self.cases[()] = stmts

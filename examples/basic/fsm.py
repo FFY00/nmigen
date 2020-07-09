@@ -6,11 +6,11 @@ class UARTReceiver(Elaboratable):
     def __init__(self, divisor):
         self.divisor = divisor
 
-        self.i    = Signal()
+        self.i = Signal()
         self.data = Signal(8)
-        self.rdy  = Signal()
-        self.ack  = Signal()
-        self.err  = Signal()
+        self.rdy = Signal()
+        self.ack = Signal()
+        self.err = Signal()
 
     def elaborate(self, platform):
         m = Module()
@@ -34,10 +34,7 @@ class UARTReceiver(Elaboratable):
                     ]
             with m.State("DATA"):
                 with m.If(stb):
-                    m.d.sync += [
-                        bit.eq(bit - 1),
-                        self.data.eq(Cat(self.i, self.data))
-                    ]
+                    m.d.sync += [bit.eq(bit - 1), self.data.eq(Cat(self.i, self.data))]
                     with m.If(bit == 0):
                         m.next = "STOP"
             with m.State("STOP"):

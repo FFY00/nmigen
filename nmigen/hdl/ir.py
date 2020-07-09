@@ -10,7 +10,6 @@ from .._unused import *
 from .ast import *
 from .cd import *
 
-
 __all__ = ["UnusedElaboratable", "Elaboratable", "DriverConflict", "Fragment", "Instance"]
 
 
@@ -40,10 +39,10 @@ class Fragment:
             elif hasattr(obj, "elaborate"):
                 warnings.warn(
                     message="Class {!r} is an elaboratable that does not explicitly inherit from "
-                            "Elaboratable; doing so would improve diagnostics"
-                            .format(type(obj)),
+                    "Elaboratable; doing so would improve diagnostics".format(type(obj)),
                     category=RuntimeWarning,
-                    stacklevel=2)
+                    stacklevel=2
+                )
                 code = obj.elaborate.__code__
                 obj = obj.elaborate(platform)
             else:
@@ -53,7 +52,8 @@ class Fragment:
                     message=".elaborate() returned None; missing return statement?",
                     category=UserWarning,
                     filename=code.co_filename,
-                    lineno=code.co_firstlineno)
+                    lineno=code.co_firstlineno
+                )
 
     def __init__(self):
         self.ports = SignalDict()
@@ -164,18 +164,19 @@ class Fragment:
 
         # Remove the merged subfragment.
         found = False
-        for i, (check_subfrag, check_name) in enumerate(self.subfragments): # :nobr:
+        for i, (check_subfrag, check_name) in enumerate(self.subfragments):  # :nobr:
             if subfragment == check_subfrag:
                 del self.subfragments[i]
                 found = True
                 break
         assert found
 
-    def _resolve_hierarchy_conflicts(self, hierarchy=("top",), mode="warn"):
+    def _resolve_hierarchy_conflicts(self, hierarchy=("top", ), mode="warn"):
         assert mode in ("silent", "warn", "error")
 
         driver_subfrags = SignalDict()
         memory_subfrags = OrderedDict()
+
         def add_subfrag(registry, entity, entry):
             # Because of missing domain insertion, at the point when this code runs, we have
             # a mixture of bound and unbound {Clock,Reset}Signals. Map the bound ones to
@@ -199,7 +200,7 @@ class Fragment:
         for i, (subfrag, name) in enumerate(self.subfragments):
             if name is None:
                 name = "<unnamed #{}>".format(i)
-            subfrag_hierarchy = hierarchy + (name,)
+            subfrag_hierarchy = hierarchy + (name, )
 
             if subfrag.flatten:
                 # Always flatten subfragments that explicitly request it.
@@ -239,8 +240,7 @@ class Fragment:
                 continue
 
             # While we're at it, show a message.
-            message = ("Signal '{}' is driven from multiple fragments: {}"
-                       .format(signal, ", ".join(subfrag_names)))
+            message = ("Signal '{}' is driven from multiple fragments: {}".format(signal, ", ".join(subfrag_names)))
             if mode == "error":
                 raise DriverConflict(message)
             elif mode == "warn":
@@ -253,8 +253,7 @@ class Fragment:
                 continue
 
             # While we're at it, show a message.
-            message = ("Memory '{}' is accessed from multiple fragments: {}"
-                       .format(memory.name, ", ".join(subfrag_names)))
+            message = ("Memory '{}' is accessed from multiple fragments: {}".format(memory.name, ", ".join(subfrag_names)))
             if mode == "error":
                 raise DriverConflict(message)
             elif mode == "warn":
@@ -276,10 +275,9 @@ class Fragment:
             return self._resolve_hierarchy_conflicts(hierarchy, mode)
 
         # Nothing was flattened, we're done!
-        return (SignalSet(driver_subfrags.keys()),
-                set(memory_subfrags.keys()))
+        return (SignalSet(driver_subfrags.keys()), set(memory_subfrags.keys()))
 
-    def _propagate_domains_up(self, hierarchy=("top",)):
+    def _propagate_domains_up(self, hierarchy=("top", )):
         from .xfrm import DomainRenamer
 
         domain_subfrags = defaultdict(lambda: set())
@@ -290,7 +288,7 @@ class Fragment:
             hier_name = name
             if hier_name is None:
                 hier_name = "<unnamed #{}>".format(i)
-            subfrag._propagate_domains_up(hierarchy + (hier_name,))
+            subfrag._propagate_domains_up(hierarchy + (hier_name, ))
 
             # Second, classify subfragments by domains they define.
             for domain_name, domain in subfrag.domains.items():
@@ -306,20 +304,21 @@ class Fragment:
 
             names = [n for f, n, i in subfrags]
             if not all(names):
-                names = sorted("<unnamed #{}>".format(i) if n is None else "'{}'".format(n)
-                               for f, n, i in subfrags)
-                raise DomainError("Domain '{}' is defined by subfragments {} of fragment '{}'; "
-                                  "it is necessary to either rename subfragment domains "
-                                  "explicitly, or give names to subfragments"
-                                  .format(domain_name, ", ".join(names), ".".join(hierarchy)))
+                names = sorted("<unnamed #{}>".format(i) if n is None else "'{}'".format(n) for f, n, i in subfrags)
+                raise DomainError(
+                    "Domain '{}' is defined by subfragments {} of fragment '{}'; "
+                    "it is necessary to either rename subfragment domains "
+                    "explicitly, or give names to subfragments".format(domain_name, ", ".join(names), ".".join(hierarchy))
+                )
 
             if len(names) != len(set(names)):
                 names = sorted("#{}".format(i) for f, n, i in subfrags)
-                raise DomainError("Domain '{}' is defined by subfragments {} of fragment '{}', "
-                                  "some of which have identical names; it is necessary to either "
-                                  "rename subfragment domains explicitly, or give distinct names "
-                                  "to subfragments"
-                                  .format(domain_name, ", ".join(names), ".".join(hierarchy)))
+                raise DomainError(
+                    "Domain '{}' is defined by subfragments {} of fragment '{}', "
+                    "some of which have identical names; it is necessary to either "
+                    "rename subfragment domains explicitly, or give distinct names "
+                    "to subfragments".format(domain_name, ", ".join(names), ".".join(hierarchy))
+                )
 
             for subfrag, name, i in subfrags:
                 domain_name_map = {domain_name: "{}_{}".format(name, domain_name)}
@@ -367,8 +366,10 @@ class Fragment:
                     defined = new_fragment.domains.keys()
                     raise DomainError(
                         "Fragment returned by missing domain callback does not define "
-                        "requested domain '{}' (defines {})."
-                        .format(domain_name, ", ".join("'{}'".format(n) for n in defined)))
+                        "requested domain '{}' (defines {}).".format(
+                            domain_name, ", ".join("'{}'".format(n) for n in defined)
+                        )
+                    )
                 self.add_subfragment(new_fragment, "cd_{}".format(domain_name))
                 self.add_domains(new_fragment.domains.values())
         return new_domains
@@ -431,7 +432,7 @@ class Fragment:
                         add_io(value._lhs_signals())
             else:
                 parent[subfrag] = self
-                level [subfrag] = level[self] + 1
+                level[subfrag] = level[self] + 1
 
                 subfrag._prepare_use_def_graph(parent, level, uses, defs, ios, top)
 
@@ -455,10 +456,10 @@ class Fragment:
         #   3. Going upwards from all uses, add input ports.
 
         parent = {self: None}
-        level  = {self: 0}
-        uses   = SignalDict()
-        defs   = SignalDict()
-        ios    = SignalDict()
+        level = {self: 0}
+        uses = SignalDict()
+        defs = SignalDict()
+        ios = SignalDict()
         self._prepare_use_def_graph(parent, level, uses, defs, ios, self)
 
         ports = SignalSet(ports)
@@ -492,9 +493,9 @@ class Fragment:
 
         for sig in uses:
             if sig in defs:
-                lca  = reduce(lca_of, uses[sig], defs[sig])
+                lca = reduce(lca_of, uses[sig], defs[sig])
             else:
-                lca  = reduce(lca_of, uses[sig])
+                lca = reduce(lca_of, uses[sig])
 
             for frag in uses[sig]:
                 if sig in defs and frag is defs[sig]:
@@ -543,8 +544,7 @@ class Fragment:
             port_lowerer = DomainLowerer(fragment.domains)
             for port in ports:
                 if not isinstance(port, (Signal, ClockSignal, ResetSignal)):
-                    raise TypeError("Only signals may be added as ports, not {!r}"
-                                    .format(port))
+                    raise TypeError("Only signals may be added as ports, not {!r}".format(port))
                 mapped_ports.append(port_lowerer.on_value(port))
             # Add ports for all newly created missing clock domains, since not doing so defeats
             # the purpose of domain auto-creation. (It's possible to refer to these ports before
@@ -561,8 +561,8 @@ class Instance(Fragment):
     def __init__(self, type, *args, **kwargs):
         super().__init__()
 
-        self.type        = type
-        self.parameters  = OrderedDict()
+        self.type = type
+        self.parameters = OrderedDict()
         self.named_ports = OrderedDict()
 
         for (kind, name, value) in args:
@@ -573,9 +573,10 @@ class Instance(Fragment):
             elif kind in ("i", "o", "io"):
                 self.named_ports[name] = (Value.cast(value), kind)
             else:
-                raise NameError("Instance argument {!r} should be a tuple (kind, name, value) "
-                                "where kind is one of \"p\", \"i\", \"o\", or \"io\""
-                                .format((kind, name, value)))
+                raise NameError(
+                    "Instance argument {!r} should be a tuple (kind, name, value) "
+                    "where kind is one of \"p\", \"i\", \"o\", or \"io\"".format((kind, name, value))
+                )
 
         for kw, arg in kwargs.items():
             if kw.startswith("a_"):
@@ -589,6 +590,7 @@ class Instance(Fragment):
             elif kw.startswith("io_"):
                 self.named_ports[kw[3:]] = (Value.cast(arg), "io")
             else:
-                raise NameError("Instance keyword argument {}={!r} does not start with one of "
-                                "\"p_\", \"i_\", \"o_\", or \"io_\""
-                                .format(kw, arg))
+                raise NameError(
+                    "Instance keyword argument {}={!r} does not start with one of "
+                    "\"p_\", \"i_\", \"o_\", or \"io_\"".format(kw, arg)
+                )

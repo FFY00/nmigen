@@ -7,7 +7,7 @@ from nmigen_boards.ice40_hx1k_blink_evn import *
 
 class Blinky(Elaboratable):
     def elaborate(self, platform):
-        led   = platform.request("led", 0)
+        led = platform.request("led", 0)
         timer = Signal(20)
 
         m = Module()

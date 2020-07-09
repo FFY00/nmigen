@@ -31,7 +31,8 @@ class DomainRenamerTestCase(FHDLTestCase):
         f.add_driver(self.s3, "sync")
 
         f = DomainRenamer("pix")(f)
-        self.assertRepr(f.statements, """
+        self.assertRepr(
+            f.statements, """
         (
             (eq (sig s1) (clk pix))
             (eq (rst pix) (sig s2))
@@ -39,10 +40,11 @@ class DomainRenamerTestCase(FHDLTestCase):
             (eq (sig s4) (clk other))
             (eq (sig s5) (rst other))
         )
-        """)
+        """
+        )
         self.assertEqual(f.drivers, {
             None: SignalSet((self.s1, self.s2)),
-            "pix": SignalSet((self.s3,)),
+            "pix": SignalSet((self.s3, )),
         })
 
     def test_rename_multi(self):
@@ -53,16 +55,18 @@ class DomainRenamerTestCase(FHDLTestCase):
         )
 
         f = DomainRenamer({"sync": "pix", "other": "pix2"})(f)
-        self.assertRepr(f.statements, """
+        self.assertRepr(
+            f.statements, """
         (
             (eq (sig s1) (clk pix))
             (eq (sig s2) (rst pix2))
         )
-        """)
+        """
+        )
 
     def test_rename_cd(self):
         cd_sync = ClockDomain()
-        cd_pix  = ClockDomain()
+        cd_pix = ClockDomain()
 
         f = Fragment()
         f.add_domains(cd_sync, cd_pix)
@@ -75,13 +79,11 @@ class DomainRenamerTestCase(FHDLTestCase):
         })
 
     def test_rename_cd_preserves_allow_reset_less(self):
-        cd_pix  = ClockDomain(reset_less=True)
+        cd_pix = ClockDomain(reset_less=True)
 
         f = Fragment()
         f.add_domains(cd_pix)
-        f.add_statements(
-            self.s1.eq(ResetSignal(allow_reset_less=True)),
-        )
+        f.add_statements(self.s1.eq(ResetSignal(allow_reset_less=True)), )
 
         f = DomainRenamer("pix")(f)
         f = DomainLowerer()(f)
@@ -91,10 +93,9 @@ class DomainRenamerTestCase(FHDLTestCase):
         )
         """)
 
-
     def test_rename_cd_subfragment(self):
         cd_sync = ClockDomain()
-        cd_pix  = ClockDomain()
+        cd_pix = ClockDomain()
 
         f1 = Fragment()
         f1.add_domains(cd_sync, cd_pix)
@@ -110,13 +111,11 @@ class DomainRenamerTestCase(FHDLTestCase):
         })
 
     def test_rename_wrong_to_comb(self):
-        with self.assertRaises(ValueError,
-                msg="Domain 'sync' may not be renamed to 'comb'"):
+        with self.assertRaises(ValueError, msg="Domain 'sync' may not be renamed to 'comb'"):
             DomainRenamer("comb")
 
     def test_rename_wrong_from_comb(self):
-        with self.assertRaises(ValueError,
-                msg="Domain 'comb' may not be renamed"):
+        with self.assertRaises(ValueError, msg="Domain 'comb' may not be renamed"):
             DomainRenamer({"comb": "sync"})
 
 
@@ -128,9 +127,7 @@ class DomainLowererTestCase(FHDLTestCase):
         sync = ClockDomain()
         f = Fragment()
         f.add_domains(sync)
-        f.add_statements(
-            self.s.eq(ClockSignal("sync"))
-        )
+        f.add_statements(self.s.eq(ClockSignal("sync")))
 
         f = DomainLowerer()(f)
         self.assertRepr(f.statements, """
@@ -143,9 +140,7 @@ class DomainLowererTestCase(FHDLTestCase):
         sync = ClockDomain()
         f = Fragment()
         f.add_domains(sync)
-        f.add_statements(
-            self.s.eq(ResetSignal("sync"))
-        )
+        f.add_statements(self.s.eq(ResetSignal("sync")))
 
         f = DomainLowerer()(f)
         self.assertRepr(f.statements, """
@@ -158,9 +153,7 @@ class DomainLowererTestCase(FHDLTestCase):
         sync = ClockDomain(reset_less=True)
         f = Fragment()
         f.add_domains(sync)
-        f.add_statements(
-            self.s.eq(ResetSignal("sync", allow_reset_less=True))
-        )
+        f.add_statements(self.s.eq(ResetSignal("sync", allow_reset_less=True)))
 
         f = DomainLowerer()(f)
         self.assertRepr(f.statements, """
@@ -178,31 +171,22 @@ class DomainLowererTestCase(FHDLTestCase):
         f.add_driver(ResetSignal("pix"), "sync")
 
         f = DomainLowerer()(f)
-        self.assertEqual(f.drivers, {
-            None: SignalSet((pix.clk,)),
-            "sync": SignalSet((pix.rst,))
-        })
+        self.assertEqual(f.drivers, {None: SignalSet((pix.clk, )), "sync": SignalSet((pix.rst, ))})
 
     def test_lower_wrong_domain(self):
         f = Fragment()
-        f.add_statements(
-            self.s.eq(ClockSignal("xxx"))
-        )
+        f.add_statements(self.s.eq(ClockSignal("xxx")))
 
-        with self.assertRaises(DomainError,
-                msg="Signal (clk xxx) refers to nonexistent domain 'xxx'"):
+        with self.assertRaises(DomainError, msg="Signal (clk xxx) refers to nonexistent domain 'xxx'"):
             DomainLowerer()(f)
 
     def test_lower_wrong_reset_less_domain(self):
         sync = ClockDomain(reset_less=True)
         f = Fragment()
         f.add_domains(sync)
-        f.add_statements(
-            self.s.eq(ResetSignal("sync"))
-        )
+        f.add_statements(self.s.eq(ResetSignal("sync")))
 
-        with self.assertRaises(DomainError,
-                msg="Signal (rst sync) refers to reset of reset-less domain 'sync'"):
+        with self.assertRaises(DomainError, msg="Signal (rst sync) refers to reset of reset-less domain 'sync'"):
             DomainLowerer()(f)
 
 
@@ -222,7 +206,8 @@ class SampleLowererTestCase(FHDLTestCase):
         )
 
         f = SampleLowerer()(f)
-        self.assertRepr(f.statements, """
+        self.assertRepr(
+            f.statements, """
         (
             (eq (sig o1) (sig $sample$s$i$sync$2))
             (eq (sig o2) (sig $sample$s$i$sync$1))
@@ -231,24 +216,25 @@ class SampleLowererTestCase(FHDLTestCase):
             (eq (sig $sample$s$i$sync$2) (sig $sample$s$i$sync$1))
             (eq (sig $sample$s$i$pix$1) (sig i))
         )
-        """)
+        """
+        )
         self.assertEqual(len(f.drivers["sync"]), 2)
         self.assertEqual(len(f.drivers["pix"]), 1)
 
     def test_lower_const(self):
         f = Fragment()
-        f.add_statements(
-            self.o1.eq(Sample(1, 2, "sync")),
-        )
+        f.add_statements(self.o1.eq(Sample(1, 2, "sync")), )
 
         f = SampleLowerer()(f)
-        self.assertRepr(f.statements, """
+        self.assertRepr(
+            f.statements, """
         (
             (eq (sig o1) (sig $sample$c$1$sync$2))
             (eq (sig $sample$c$1$sync$1) (const 1'd1))
             (eq (sig $sample$c$1$sync$2) (sig $sample$c$1$sync$1))
         )
-        """)
+        """
+        )
         self.assertEqual(len(f.drivers["sync"]), 2)
 
 
@@ -257,19 +243,10 @@ class SwitchCleanerTestCase(FHDLTestCase):
         a = Signal()
         b = Signal()
         c = Signal()
-        stmts = [
-            Switch(a, {
-                1: a.eq(0),
-                0: [
-                    b.eq(1),
-                    Switch(b, {1: [
-                        Switch(a|b, {})
-                    ]})
-                ]
-            })
-        ]
+        stmts = [Switch(a, {1: a.eq(0), 0: [b.eq(1), Switch(b, {1: [Switch(a | b, {})]})]})]
 
-        self.assertRepr(SwitchCleaner()(stmts), """
+        self.assertRepr(
+            SwitchCleaner()(stmts), """
         (
             (switch (sig a)
                 (case 1
@@ -278,7 +255,8 @@ class SwitchCleanerTestCase(FHDLTestCase):
                     (eq (sig b) (const 1'd1)))
             )
         )
-        """)
+        """
+        )
 
 
 class LHSGroupAnalyzerTestCase(FHDLTestCase):
@@ -292,8 +270,8 @@ class LHSGroupAnalyzerTestCase(FHDLTestCase):
 
         groups = LHSGroupAnalyzer()(stmts)
         self.assertEqual(list(groups.values()), [
-            SignalSet((a,)),
-            SignalSet((b,)),
+            SignalSet((a, )),
+            SignalSet((b, )),
         ])
 
     def test_group_related(self):
@@ -326,27 +304,21 @@ class LHSGroupAnalyzerTestCase(FHDLTestCase):
     def test_switch(self):
         a = Signal()
         b = Signal()
-        stmts = [
-            a.eq(0),
-            Switch(a, {
-                1: b.eq(0),
-            })
-        ]
+        stmts = [a.eq(0), Switch(a, {
+            1: b.eq(0),
+        })]
 
         groups = LHSGroupAnalyzer()(stmts)
         self.assertEqual(list(groups.values()), [
-            SignalSet((a,)),
-            SignalSet((b,)),
+            SignalSet((a, )),
+            SignalSet((b, )),
         ])
 
     def test_lhs_empty(self):
-        stmts = [
-            Cat().eq(0)
-        ]
+        stmts = [Cat().eq(0)]
 
         groups = LHSGroupAnalyzer()(stmts)
-        self.assertEqual(list(groups.values()), [
-        ])
+        self.assertEqual(list(groups.values()), [])
 
 
 class LHSGroupFilterTestCase(FHDLTestCase):
@@ -354,17 +326,10 @@ class LHSGroupFilterTestCase(FHDLTestCase):
         a = Signal()
         b = Signal()
         c = Signal()
-        stmts = [
-            Switch(a, {
-                1: a.eq(0),
-                0: [
-                    b.eq(1),
-                    Switch(b, {1: []})
-                ]
-            })
-        ]
+        stmts = [Switch(a, {1: a.eq(0), 0: [b.eq(1), Switch(b, {1: []})]})]
 
-        self.assertRepr(LHSGroupFilter(SignalSet((a,)))(stmts), """
+        self.assertRepr(
+            LHSGroupFilter(SignalSet((a, )))(stmts), """
         (
             (switch (sig a)
                 (case 1
@@ -372,12 +337,11 @@ class LHSGroupFilterTestCase(FHDLTestCase):
                 (case 0 )
             )
         )
-        """)
+        """
+        )
 
     def test_lhs_empty(self):
-        stmts = [
-            Cat().eq(0)
-        ]
+        stmts = [Cat().eq(0)]
 
         self.assertRepr(LHSGroupFilter(SignalSet())(stmts), "()")
 
@@ -391,20 +355,20 @@ class ResetInserterTestCase(FHDLTestCase):
 
     def test_reset_default(self):
         f = Fragment()
-        f.add_statements(
-            self.s1.eq(1)
-        )
+        f.add_statements(self.s1.eq(1))
         f.add_driver(self.s1, "sync")
 
         f = ResetInserter(self.c1)(f)
-        self.assertRepr(f.statements, """
+        self.assertRepr(
+            f.statements, """
         (
             (eq (sig s1) (const 1'd1))
             (switch (sig c1)
                 (case 1 (eq (sig s1) (const 1'd0)))
             )
         )
-        """)
+        """
+        )
 
     def test_reset_cd(self):
         f = Fragment()
@@ -417,7 +381,8 @@ class ResetInserterTestCase(FHDLTestCase):
         f.add_driver(self.s2, "pix")
 
         f = ResetInserter({"pix": self.c1})(f)
-        self.assertRepr(f.statements, """
+        self.assertRepr(
+            f.statements, """
         (
             (eq (sig s1) (const 1'd1))
             (eq (sig s2) (const 1'd0))
@@ -425,41 +390,42 @@ class ResetInserterTestCase(FHDLTestCase):
                 (case 1 (eq (sig s2) (const 1'd1)))
             )
         )
-        """)
+        """
+        )
 
     def test_reset_value(self):
         f = Fragment()
-        f.add_statements(
-            self.s2.eq(0)
-        )
+        f.add_statements(self.s2.eq(0))
         f.add_driver(self.s2, "sync")
 
         f = ResetInserter(self.c1)(f)
-        self.assertRepr(f.statements, """
+        self.assertRepr(
+            f.statements, """
         (
             (eq (sig s2) (const 1'd0))
             (switch (sig c1)
                 (case 1 (eq (sig s2) (const 1'd1)))
             )
         )
-        """)
+        """
+        )
 
     def test_reset_less(self):
         f = Fragment()
-        f.add_statements(
-            self.s3.eq(0)
-        )
+        f.add_statements(self.s3.eq(0))
         f.add_driver(self.s3, "sync")
 
         f = ResetInserter(self.c1)(f)
-        self.assertRepr(f.statements, """
+        self.assertRepr(
+            f.statements, """
         (
             (eq (sig s3) (const 1'd0))
             (switch (sig c1)
                 (case 1 )
             )
         )
-        """)
+        """
+        )
 
 
 class EnableInserterTestCase(FHDLTestCase):
@@ -471,20 +437,20 @@ class EnableInserterTestCase(FHDLTestCase):
 
     def test_enable_default(self):
         f = Fragment()
-        f.add_statements(
-            self.s1.eq(1)
-        )
+        f.add_statements(self.s1.eq(1))
         f.add_driver(self.s1, "sync")
 
         f = EnableInserter(self.c1)(f)
-        self.assertRepr(f.statements, """
+        self.assertRepr(
+            f.statements, """
         (
             (eq (sig s1) (const 1'd1))
             (switch (sig c1)
                 (case 0 (eq (sig s1) (sig s1)))
             )
         )
-        """)
+        """
+        )
 
     def test_enable_cd(self):
         f = Fragment()
@@ -496,7 +462,8 @@ class EnableInserterTestCase(FHDLTestCase):
         f.add_driver(self.s2, "pix")
 
         f = EnableInserter({"pix": self.c1})(f)
-        self.assertRepr(f.statements, """
+        self.assertRepr(
+            f.statements, """
         (
             (eq (sig s1) (const 1'd1))
             (eq (sig s2) (const 1'd0))
@@ -504,40 +471,41 @@ class EnableInserterTestCase(FHDLTestCase):
                 (case 0 (eq (sig s2) (sig s2)))
             )
         )
-        """)
+        """
+        )
 
     def test_enable_subfragment(self):
         f1 = Fragment()
-        f1.add_statements(
-            self.s1.eq(1)
-        )
+        f1.add_statements(self.s1.eq(1))
         f1.add_driver(self.s1, "sync")
 
         f2 = Fragment()
-        f2.add_statements(
-            self.s2.eq(1)
-        )
+        f2.add_statements(self.s2.eq(1))
         f2.add_driver(self.s2, "sync")
         f1.add_subfragment(f2)
 
         f1 = EnableInserter(self.c1)(f1)
         (f2, _), = f1.subfragments
-        self.assertRepr(f1.statements, """
+        self.assertRepr(
+            f1.statements, """
         (
             (eq (sig s1) (const 1'd1))
             (switch (sig c1)
                 (case 0 (eq (sig s1) (sig s1)))
             )
         )
-        """)
-        self.assertRepr(f2.statements, """
+        """
+        )
+        self.assertRepr(
+            f2.statements, """
         (
             (eq (sig s2) (const 1'd1))
             (switch (sig c1)
                 (case 0 (eq (sig s2) (sig s2)))
             )
         )
-        """)
+        """
+        )
 
     def test_enable_read_port(self):
         mem = Memory(width=8, depth=4)
@@ -549,9 +517,11 @@ class EnableInserterTestCase(FHDLTestCase):
     def test_enable_write_port(self):
         mem = Memory(width=8, depth=4)
         f = EnableInserter(self.c1)(mem.write_port()).elaborate(platform=None)
-        self.assertRepr(f.named_ports["EN"][0], """
+        self.assertRepr(
+            f.named_ports["EN"][0], """
         (m (sig c1) (cat (repl (slice (sig mem_w_en) 0:1) 8)) (const 8'd0))
-        """)
+        """
+        )
 
 
 class _MockElaboratable(Elaboratable):
@@ -560,9 +530,7 @@ class _MockElaboratable(Elaboratable):
 
     def elaborate(self, platform):
         f = Fragment()
-        f.add_statements(
-            self.s1.eq(1)
-        )
+        f.add_statements(self.s1.eq(1))
         f.add_driver(self.s1, "sync")
         return f
 
@@ -587,7 +555,8 @@ class TransformedElaboratableTestCase(FHDLTestCase):
         self.assertIs(te1, te2)
 
         f = Fragment.get(te2, None)
-        self.assertRepr(f.statements, """
+        self.assertRepr(
+            f.statements, """
         (
             (eq (sig s1) (const 1'd1))
             (switch (sig c1)
@@ -597,7 +566,8 @@ class TransformedElaboratableTestCase(FHDLTestCase):
                 (case 1 (eq (sig s1) (const 1'd0)))
             )
         )
-        """)
+        """
+        )
 
 
 class MockUserValue(UserValue):
@@ -611,23 +581,22 @@ class MockUserValue(UserValue):
 
 class UserValueTestCase(FHDLTestCase):
     def setUp(self):
-        self.s  = Signal()
-        self.c  = Signal()
+        self.s = Signal()
+        self.c = Signal()
         self.uv = MockUserValue(self.s)
 
     def test_lower(self):
         sync = ClockDomain()
         f = Fragment()
         f.add_domains(sync)
-        f.add_statements(
-            self.uv.eq(1)
-        )
+        f.add_statements(self.uv.eq(1))
         for signal in self.uv._lhs_signals():
             f.add_driver(signal, "sync")
 
         f = ResetInserter(self.c)(f)
         f = DomainLowerer()(f)
-        self.assertRepr(f.statements, """
+        self.assertRepr(
+            f.statements, """
         (
             (eq (sig s) (const 1'd1))
             (switch (sig c)
@@ -637,7 +606,8 @@ class UserValueTestCase(FHDLTestCase):
                 (case 1 (eq (sig s) (const 1'd0)))
             )
         )
-        """)
+        """
+        )
 
 
 class UserValueRecursiveTestCase(UserValueTestCase):

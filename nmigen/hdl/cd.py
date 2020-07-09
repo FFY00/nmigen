@@ -1,7 +1,6 @@
 from .. import tracer
 from .ast import Signal
 
-
 __all__ = ["ClockDomain", "DomainError"]
 
 
@@ -39,7 +38,6 @@ class ClockDomain:
     rst : Signal or None, inout
         Reset signal for this domain. Can be driven or used to drive.
     """
-
     @staticmethod
     def _name_for(domain_name, signal_name):
         if domain_name == "sync":
@@ -47,8 +45,7 @@ class ClockDomain:
         else:
             return "{}_{}".format(domain_name, signal_name)
 
-    def __init__(self, name=None, *, clk_edge="pos", reset_less=False, async_reset=False,
-                 local=False):
+    def __init__(self, name=None, *, clk_edge="pos", reset_less=False, async_reset=False, local=False):
         if name is None:
             try:
                 name = tracer.get_var_name()
@@ -60,8 +57,7 @@ class ClockDomain:
             raise ValueError("Domain '{}' may not be clocked".format(name))
 
         if clk_edge not in ("pos", "neg"):
-            raise ValueError("Domain clock edge must be one of 'pos' or 'neg', not {!r}"
-                             .format(clk_edge))
+            raise ValueError("Domain clock edge must be one of 'pos' or 'neg', not {!r}".format(clk_edge))
 
         self.name = name
 

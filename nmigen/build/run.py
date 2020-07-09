@@ -8,7 +8,6 @@ import tempfile
 import zipfile
 import hashlib
 
-
 __all__ = ["BuildPlan", "BuildProducts", "LocalBuildProducts"]
 
 
@@ -22,7 +21,7 @@ class BuildPlan:
             The base name (without extension) of the script that will be executed.
         """
         self.script = script
-        self.files  = OrderedDict()
+        self.files = OrderedDict()
 
     def add_file(self, filename, content):
         """
@@ -133,9 +132,7 @@ class BuildProducts(metaclass=ABCMeta):
                 # On Windows, a named temporary file (as created by Python) is not accessible to
                 # others if it's still open within the Python process, so we close it and delete
                 # it manually.
-                file = tempfile.NamedTemporaryFile(
-                    prefix="nmigen_", suffix="_" + os.path.basename(filename),
-                    delete=False)
+                file = tempfile.NamedTemporaryFile(prefix="nmigen_", suffix="_" + os.path.basename(filename), delete=False)
                 files.append(file)
                 file.write(self.get(filename))
                 file.close()

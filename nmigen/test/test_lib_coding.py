@@ -8,6 +8,7 @@ from ..lib.coding import *
 class EncoderTestCase(FHDLTestCase):
     def test_basic(self):
         enc = Encoder(4)
+
         def process():
             self.assertEqual((yield enc.n), 1)
             self.assertEqual((yield enc.o), 0)
@@ -35,6 +36,7 @@ class EncoderTestCase(FHDLTestCase):
 class PriorityEncoderTestCase(FHDLTestCase):
     def test_basic(self):
         enc = PriorityEncoder(4)
+
         def process():
             self.assertEqual((yield enc.n), 1)
             self.assertEqual((yield enc.o), 0)
@@ -62,6 +64,7 @@ class PriorityEncoderTestCase(FHDLTestCase):
 class DecoderTestCase(FHDLTestCase):
     def test_basic(self):
         dec = Decoder(4)
+
         def process():
             self.assertEqual((yield dec.o), 0b0001)
 
@@ -86,41 +89,35 @@ class ReversibleSpec(Elaboratable):
     def __init__(self, encoder_cls, decoder_cls, args):
         self.encoder_cls = encoder_cls
         self.decoder_cls = decoder_cls
-        self.coder_args  = args
+        self.coder_args = args
 
     def elaborate(self, platform):
         m = Module()
         enc, dec = self.encoder_cls(*self.coder_args), self.decoder_cls(*self.coder_args)
         m.submodules += enc, dec
-        m.d.comb += [
-            dec.i.eq(enc.o),
-            Assert(enc.i == dec.o)
-        ]
+        m.d.comb += [dec.i.eq(enc.o), Assert(enc.i == dec.o)]
         return m
 
 
 class HammingDistanceSpec(Elaboratable):
     def __init__(self, distance, encoder_cls, args):
-        self.distance    = distance
+        self.distance = distance
         self.encoder_cls = encoder_cls
-        self.coder_args  = args
+        self.coder_args = args
 
     def elaborate(self, platform):
         m = Module()
         enc1, enc2 = self.encoder_cls(*self.coder_args), self.encoder_cls(*self.coder_args)
         m.submodules += enc1, enc2
-        m.d.comb += [
-            Assume(enc1.i + 1 == enc2.i),
-            Assert(sum(enc1.o ^ enc2.o) == self.distance)
-        ]
+        m.d.comb += [Assume(enc1.i + 1 == enc2.i), Assert(sum(enc1.o ^ enc2.o) == self.distance)]
         return m
 
 
 class GrayCoderTestCase(FHDLTestCase):
     def test_reversible(self):
-        spec = ReversibleSpec(encoder_cls=GrayEncoder, decoder_cls=GrayDecoder, args=(16,))
+        spec = ReversibleSpec(encoder_cls=GrayEncoder, decoder_cls=GrayDecoder, args=(16, ))
         self.assertFormal(spec, mode="prove")
 
     def test_distance(self):
-        spec = HammingDistanceSpec(distance=1, encoder_cls=GrayEncoder, args=(16,))
+        spec = HammingDistanceSpec(distance=1, encoder_cls=GrayEncoder, args=(16, ))
         self.assertFormal(spec, mode="prove")

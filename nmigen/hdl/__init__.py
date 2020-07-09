@@ -7,14 +7,28 @@ from .mem import Memory
 from .rec import Record
 from .xfrm import DomainRenamer, ResetInserter, EnableInserter
 
-
 __all__ = [
-    "Shape", "unsigned", "signed",
-    "Value", "Const", "C", "Mux", "Cat", "Repl", "Array", "Signal", "ClockSignal", "ResetSignal",
+    "Shape",
+    "unsigned",
+    "signed",
+    "Value",
+    "Const",
+    "C",
+    "Mux",
+    "Cat",
+    "Repl",
+    "Array",
+    "Signal",
+    "ClockSignal",
+    "ResetSignal",
     "Module",
     "ClockDomain",
-    "Elaboratable", "Fragment", "Instance",
+    "Elaboratable",
+    "Fragment",
+    "Instance",
     "Memory",
     "Record",
-    "DomainRenamer", "ResetInserter", "EnableInserter",
+    "DomainRenamer",
+    "ResetInserter",
+    "EnableInserter",
 ]

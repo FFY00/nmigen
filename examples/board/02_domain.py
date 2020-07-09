@@ -9,8 +9,8 @@ from nmigen_boards.ice40_hx1k_blink_evn import *
 class BlinkyWithDomain(Elaboratable):
     def elaborate(self, platform):
         clk3p3 = platform.request("clk3p3")
-        led    = platform.request("led", 0)
-        timer  = Signal(20)
+        led = platform.request("led", 0)
+        timer = Signal(20)
 
         m = Module()
         m.domains.sync = ClockDomain()

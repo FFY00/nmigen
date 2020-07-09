@@ -4,11 +4,11 @@ from nmigen.cli import main
 
 class RegisterFile(Elaboratable):
     def __init__(self):
-        self.adr   = Signal(4)
+        self.adr = Signal(4)
         self.dat_r = Signal(8)
         self.dat_w = Signal(8)
-        self.we    = Signal()
-        self.mem   = Memory(width=8, depth=16, init=[0xaa, 0x55])
+        self.we = Signal()
+        self.mem = Memory(width=8, depth=16, init=[0xaa, 0x55])
 
     def elaborate(self, platform):
         m = Module()

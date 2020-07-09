@@ -7,7 +7,6 @@ from ..hdl.ast import SignalSet
 from ..hdl.xfrm import ValueVisitor, StatementVisitor, LHSGroupFilter
 from ._core import *
 
-
 __all__ = ["PyRTLProcess"]
 
 
@@ -19,7 +18,7 @@ class _PythonEmitter:
     def __init__(self):
         self._buffer = []
         self._suffix = 0
-        self._level  = 0
+        self._level = 0
 
     def append(self, code):
         self._buffer.append("    " * self._level)
@@ -62,22 +61,22 @@ class _ValueCompiler(ValueVisitor, _Compiler):
     }
 
     def on_ClockSignal(self, value):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def on_ResetSignal(self, value):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def on_AnyConst(self, value):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def on_AnySeq(self, value):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def on_Sample(self, value):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def on_Initial(self, value):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
 
 class _RHSValueCompiler(_ValueCompiler):
@@ -108,7 +107,7 @@ class _RHSValueCompiler(_ValueCompiler):
         def sign(value):
             if value.shape().signed:
                 return f"sign({mask(value)}, {-1 << (len(value) - 1)})"
-            else: # unsigned
+            else:  # unsigned
                 return mask(value)
 
         if len(value.operands) == 1:
@@ -169,7 +168,7 @@ class _RHSValueCompiler(_ValueCompiler):
             if value.operator == "m":
                 sel, val1, val0 = value.operands
                 return f"({self(val1)} if {self(sel)} else {self(val0)})"
-        raise NotImplementedError("Operator '{}' not implemented".format(value.operator)) # :nocov:
+        raise NotImplementedError("Operator '{}' not implemented".format(value.operator))  # :nocov:
 
     def on_Slice(self, value):
         return f"(({self(value.value)} >> {value.start}) & {(1 << len(value)) - 1})"
@@ -244,7 +243,7 @@ class _LHSValueCompiler(_ValueCompiler):
         self.outputs = outputs
 
     def on_Const(self, value):
-        raise TypeError # :nocov:
+        raise TypeError  # :nocov:
 
     def on_Signal(self, value):
         if self.outputs is not None:
@@ -254,13 +253,14 @@ class _LHSValueCompiler(_ValueCompiler):
             value_mask = (1 << len(value)) - 1
             if value.shape().signed:
                 value_sign = f"sign({arg} & {value_mask}, {-1 << (len(value) - 1)})"
-            else: # unsigned
+            else:  # unsigned
                 value_sign = f"{arg} & {value_mask}"
             self.emitter.append(f"next_{self.state.get_signal(value)} = {value_sign}")
+
         return gen
 
     def on_Operator(self, value):
-        raise TypeError # :nocov:
+        raise TypeError  # :nocov:
 
     def on_Slice(self, value):
         def gen(arg):
@@ -268,6 +268,7 @@ class _LHSValueCompiler(_ValueCompiler):
             self(value.value)(f"({self.lrhs(value.value)} & " \
                 f"{~(width_mask << value.start)} | " \
                 f"(({arg} & {width_mask}) << {value.start}))")
+
         return gen
 
     def on_Part(self, value):
@@ -278,6 +279,7 @@ class _LHSValueCompiler(_ValueCompiler):
             self(value.value)(f"({self.lrhs(value.value)} & " \
                 f"~({width_mask} << {offset}) | " \
                 f"(({arg} & {width_mask}) << {offset}))")
+
         return gen
 
     def on_Cat(self, value):
@@ -289,10 +291,11 @@ class _LHSValueCompiler(_ValueCompiler):
                 part_mask = (1 << len(part)) - 1
                 self(part)(f"(({gen_arg} >> {offset}) & {part_mask})")
                 offset += len(part)
+
         return gen
 
     def on_Repl(self, value):
-        raise TypeError # :nocov:
+        raise TypeError  # :nocov:
 
     def on_ArrayProxy(self, value):
         def gen(arg):
@@ -312,6 +315,7 @@ class _LHSValueCompiler(_ValueCompiler):
                     self(value.elems[-1])(arg)
             else:
                 self.emitter.append(f"pass")
+
         return gen
 
 
@@ -331,8 +335,7 @@ class _StatementCompiler(StatementVisitor, _Compiler):
         return self.lhs(stmt.lhs)(self.rhs(stmt.rhs))
 
     def on_Switch(self, stmt):
-        gen_test = self.emitter.def_var("test",
-            f"{self.rhs(stmt.test)} & {(1 << len(stmt.test)) - 1}")
+        gen_test = self.emitter.def_var("test", f"{self.rhs(stmt.test)} & {(1 << len(stmt.test)) - 1}")
         for index, (patterns, stmts) in enumerate(stmt.cases.items()):
             gen_checks = []
             if not patterns:
@@ -340,8 +343,8 @@ class _StatementCompiler(StatementVisitor, _Compiler):
             else:
                 for pattern in patterns:
                     if "-" in pattern:
-                        mask  = int("".join("0" if b == "-" else "1" for b in pattern), 2)
-                        value = int("".join("0" if b == "-" else  b  for b in pattern), 2)
+                        mask = int("".join("0" if b == "-" else "1" for b in pattern), 2)
+                        value = int("".join("0" if b == "-" else b for b in pattern), 2)
                         gen_checks.append(f"({gen_test} & {mask}) == {value}")
                     else:
                         value = int(pattern, 2)
@@ -354,13 +357,13 @@ class _StatementCompiler(StatementVisitor, _Compiler):
                 self(stmts)
 
     def on_Assert(self, stmt):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def on_Assume(self, stmt):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def on_Cover(self, stmt):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     @classmethod
     def compile(cls, state, stmt):

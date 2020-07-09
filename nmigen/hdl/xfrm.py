@@ -10,76 +10,72 @@ from .cd import *
 from .ir import *
 from .rec import *
 
-
-__all__ = ["ValueVisitor", "ValueTransformer",
-           "StatementVisitor", "StatementTransformer",
-           "FragmentTransformer",
-           "TransformedElaboratable",
-           "DomainCollector", "DomainRenamer", "DomainLowerer",
-           "SampleDomainInjector", "SampleLowerer",
-           "SwitchCleaner", "LHSGroupAnalyzer", "LHSGroupFilter",
-           "ResetInserter", "EnableInserter"]
+__all__ = [
+    "ValueVisitor", "ValueTransformer", "StatementVisitor", "StatementTransformer", "FragmentTransformer",
+    "TransformedElaboratable", "DomainCollector", "DomainRenamer", "DomainLowerer", "SampleDomainInjector", "SampleLowerer",
+    "SwitchCleaner", "LHSGroupAnalyzer", "LHSGroupFilter", "ResetInserter", "EnableInserter"
+]
 
 
 class ValueVisitor(metaclass=ABCMeta):
     @abstractmethod
     def on_Const(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_AnyConst(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_AnySeq(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_Signal(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_ClockSignal(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_ResetSignal(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_Operator(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_Slice(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_Part(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_Cat(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_Repl(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_ArrayProxy(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_Sample(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_Initial(self, value):
-        pass # :nocov:
+        pass  # :nocov:
 
     def on_unknown_value(self, value):
-        raise TypeError("Cannot transform value {!r}".format(value)) # :nocov:
+        raise TypeError("Cannot transform value {!r}".format(value))  # :nocov:
 
     def replace_value_src_loc(self, value, new_value):
         return True
@@ -153,8 +149,7 @@ class ValueTransformer(ValueVisitor):
         return Slice(self.on_value(value.value), value.start, value.stop)
 
     def on_Part(self, value):
-        return Part(self.on_value(value.value), self.on_value(value.offset),
-                    value.width, value.stride)
+        return Part(self.on_value(value.value), self.on_value(value.offset), value.width, value.stride)
 
     def on_Cat(self, value):
         return Cat(self.on_value(o) for o in value.parts)
@@ -163,8 +158,7 @@ class ValueTransformer(ValueVisitor):
         return Repl(self.on_value(value.value), value.count)
 
     def on_ArrayProxy(self, value):
-        return ArrayProxy([self.on_value(elem) for elem in value._iter_as_values()],
-                          self.on_value(value.index))
+        return ArrayProxy([self.on_value(elem) for elem in value._iter_as_values()], self.on_value(value.index))
 
     def on_Sample(self, value):
         return Sample(self.on_value(value.value), value.clocks, value.domain)
@@ -176,30 +170,30 @@ class ValueTransformer(ValueVisitor):
 class StatementVisitor(metaclass=ABCMeta):
     @abstractmethod
     def on_Assign(self, stmt):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_Assert(self, stmt):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_Assume(self, stmt):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_Cover(self, stmt):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_Switch(self, stmt):
-        pass # :nocov:
+        pass  # :nocov:
 
     @abstractmethod
     def on_statements(self, stmts):
-        pass # :nocov:
+        pass  # :nocov:
 
     def on_unknown_statement(self, stmt):
-        raise TypeError("Cannot transform statement {!r}".format(stmt)) # :nocov:
+        raise TypeError("Cannot transform statement {!r}".format(stmt))  # :nocov:
 
     def replace_statement_src_loc(self, stmt, new_stmt):
         return True
@@ -323,7 +317,7 @@ class TransformedElaboratable(Elaboratable):
         # Fields prefixed and suffixed with underscore to avoid as many conflicts with the inner
         # object as possible, since we're forwarding attribute requests to it.
         self._elaboratable_ = elaboratable
-        self._transforms_   = []
+        self._transforms_ = []
 
     def __getattr__(self, attr):
         return getattr(self._elaboratable_, attr)
@@ -400,7 +394,7 @@ class DomainCollector(ValueVisitor, StatementVisitor):
 
     on_Assert = on_property
     on_Assume = on_property
-    on_Cover  = on_property
+    on_Cover = on_property
 
     def on_Switch(self, stmt):
         self.on_value(stmt.test)
@@ -453,8 +447,7 @@ class DomainRenamer(FragmentTransformer, ValueTransformer, StatementTransformer)
 
     def on_ResetSignal(self, value):
         if value.domain in self.domain_map:
-            return ResetSignal(self.domain_map[value.domain],
-                               allow_reset_less=value.allow_reset_less)
+            return ResetSignal(self.domain_map[value.domain], allow_reset_less=value.allow_reset_less)
         return value
 
     def map_domains(self, fragment, new_fragment):
@@ -482,8 +475,7 @@ class DomainLowerer(FragmentTransformer, ValueTransformer, StatementTransformer)
 
     def _resolve(self, domain, context):
         if domain not in self.domains:
-            raise DomainError("Signal {!r} refers to nonexistent domain '{}'"
-                              .format(context, domain))
+            raise DomainError("Signal {!r} refers to nonexistent domain '{}'".format(context, domain))
         return self.domains[domain]
 
     def map_drivers(self, fragment, new_fragment):
@@ -503,8 +495,7 @@ class DomainLowerer(FragmentTransformer, ValueTransformer, StatementTransformer)
             if value.allow_reset_less:
                 return Const(0)
             else:
-                raise DomainError("Signal {!r} refers to reset of reset-less domain '{}'"
-                                  .format(value, value.domain))
+                raise DomainError("Signal {!r} refers to reset of reset-less domain '{}'".format(value, value.domain))
         return domain.rst
 
     def _insert_resets(self, fragment):
@@ -514,8 +505,7 @@ class DomainLowerer(FragmentTransformer, ValueTransformer, StatementTransformer)
             domain = fragment.domains[domain_name]
             if domain.rst is None:
                 continue
-            stmts = [signal.eq(Const(signal.reset, signal.width))
-                     for signal in signals if not signal.reset_less]
+            stmts = [signal.eq(Const(signal.reset, signal.width)) for signal in signals if not signal.reset_less]
             fragment.add_statements(Switch(domain.rst, {1: stmts}))
 
     def on_fragment(self, fragment):
@@ -554,9 +544,9 @@ class SampleLowerer(FragmentTransformer, ValueTransformer, StatementTransformer)
         elif isinstance(value, ResetSignal):
             return "rst", 1
         elif isinstance(value, Initial):
-            return "init", 0 # Past(Initial()) produces 0, 1, 0, 0, ...
+            return "init", 0  # Past(Initial()) produces 0, 1, 0, 0, ...
         else:
-            raise NotImplementedError # :nocov:
+            raise NotImplementedError  # :nocov:
 
     def on_Sample(self, value):
         if value in self.sample_cache:
@@ -605,7 +595,7 @@ class SwitchCleaner(StatementVisitor):
     on_Assign = on_ignore
     on_Assert = on_ignore
     on_Assume = on_ignore
-    on_Cover  = on_ignore
+    on_Cover = on_ignore
 
     def on_Switch(self, stmt):
         cases = OrderedDict((k, self.on_statement(s)) for k, s in stmt.cases.items())
@@ -620,7 +610,7 @@ class SwitchCleaner(StatementVisitor):
 class LHSGroupAnalyzer(StatementVisitor):
     def __init__(self):
         self.signals = SignalDict()
-        self.unions  = OrderedDict()
+        self.unions = OrderedDict()
 
     def find(self, signal):
         if signal not in self.signals:
@@ -660,7 +650,7 @@ class LHSGroupAnalyzer(StatementVisitor):
 
     on_Assert = on_property
     on_Assume = on_property
-    on_Cover  = on_property
+    on_Cover = on_property
 
     def on_Switch(self, stmt):
         for case_stmts in stmt.cases.values():
@@ -695,7 +685,7 @@ class LHSGroupFilter(SwitchCleaner):
 
     on_Assert = on_property
     on_Assume = on_property
-    on_Cover  = on_property
+    on_Cover = on_property
 
 
 class _ControlInserter(FragmentTransformer):
@@ -714,7 +704,7 @@ class _ControlInserter(FragmentTransformer):
         return new_fragment
 
     def _insert_control(self, fragment, domain, signals):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def __call__(self, value, *, src_loc_at=0):
         self.src_loc = tracer.get_src_loc(src_loc_at=src_loc_at)

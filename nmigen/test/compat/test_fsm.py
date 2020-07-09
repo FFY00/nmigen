@@ -10,31 +10,15 @@ from .support import SimCase
 class FSMCase(SimCase, unittest.TestCase):
     class TestBench(Module):
         def __init__(self):
-            self.ctrl   = Signal()
-            self.data   = Signal()
+            self.ctrl = Signal()
+            self.data = Signal()
             self.status = Signal(8)
 
             self.submodules.dut = FSM()
-            self.dut.act("IDLE",
-                If(self.ctrl,
-                    NextState("START")
-                )
-            )
-            self.dut.act("START",
-                If(self.data,
-                    NextState("SET-STATUS-LOW")
-                ).Else(
-                    NextState("SET-STATUS")
-                )
-            )
-            self.dut.act("SET-STATUS",
-                NextValue(self.status, 0xaa),
-                NextState("IDLE")
-            )
-            self.dut.act("SET-STATUS-LOW",
-                NextValue(self.status[:4], 0xb),
-                NextState("IDLE")
-            )
+            self.dut.act("IDLE", If(self.ctrl, NextState("START")))
+            self.dut.act("START", If(self.data, NextState("SET-STATUS-LOW")).Else(NextState("SET-STATUS")))
+            self.dut.act("SET-STATUS", NextValue(self.status, 0xaa), NextState("IDLE"))
+            self.dut.act("SET-STATUS-LOW", NextValue(self.status[:4], 0xb), NextState("IDLE"))
 
     def assertState(self, fsm, state):
         self.assertEqual(fsm.decoding[(yield fsm.state)], state)
@@ -62,6 +46,7 @@ class FSMCase(SimCase, unittest.TestCase):
             yield self.tb.data.eq(0)
             yield
             yield from self.assertState(self.tb.dut, "SET-STATUS-LOW")
+
         self.run_with(gen())
 
     def test_next_value(self):
@@ -84,4 +69,5 @@ class FSMCase(SimCase, unittest.TestCase):
             yield from self.assertState(self.tb.dut, "SET-STATUS-LOW")
             yield
             self.assertEqual((yield self.tb.status), 0xab)
+
         self.run_with(gen())

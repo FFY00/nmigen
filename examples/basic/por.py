@@ -1,9 +1,8 @@
 from nmigen import *
 from nmigen.cli import main
 
-
 m = Module()
-cd_por  = ClockDomain(reset_less=True)
+cd_por = ClockDomain(reset_less=True)
 cd_sync = ClockDomain()
 m.domains += cd_por, cd_sync
 

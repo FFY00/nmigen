@@ -2,11 +2,13 @@
 
 from .. import *
 
-
 __all__ = [
-    "Encoder", "Decoder",
-    "PriorityEncoder", "PriorityDecoder",
-    "GrayEncoder", "GrayDecoder",
+    "Encoder",
+    "Decoder",
+    "PriorityEncoder",
+    "PriorityDecoder",
+    "GrayEncoder",
+    "GrayDecoder",
 ]
 
 

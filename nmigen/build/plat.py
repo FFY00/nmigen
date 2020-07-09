@@ -14,15 +14,14 @@ from ..back import rtlil, verilog
 from .res import *
 from .run import *
 
-
 __all__ = ["Platform", "TemplatedPlatform"]
 
 
 class Platform(ResourceManager, metaclass=ABCMeta):
-    resources      = abstractproperty()
-    connectors     = abstractproperty()
-    default_clk    = None
-    default_rst    = None
+    resources = abstractproperty()
+    connectors = abstractproperty()
+    default_clk = None
+    default_rst = None
     required_tools = abstractproperty()
 
     def __init__(self):
@@ -30,36 +29,31 @@ class Platform(ResourceManager, metaclass=ABCMeta):
 
         self.extra_files = OrderedDict()
 
-        self._prepared   = False
+        self._prepared = False
 
     @property
     def default_clk_constraint(self):
         if self.default_clk is None:
-            raise AttributeError("Platform '{}' does not define a default clock"
-                                 .format(type(self).__name__))
+            raise AttributeError("Platform '{}' does not define a default clock".format(type(self).__name__))
         return self.lookup(self.default_clk).clock
 
     @property
     def default_clk_frequency(self):
         constraint = self.default_clk_constraint
         if constraint is None:
-            raise AttributeError("Platform '{}' does not constrain its default clock"
-                                 .format(type(self).__name__))
+            raise AttributeError("Platform '{}' does not constrain its default clock".format(type(self).__name__))
         return constraint.frequency
 
     def add_file(self, filename, content):
         if not isinstance(filename, str):
-            raise TypeError("File name must be a string, not {!r}"
-                            .format(filename))
+            raise TypeError("File name must be a string, not {!r}".format(filename))
         if hasattr(content, "read"):
             content = content.read()
         elif not isinstance(content, (str, bytes)):
-            raise TypeError("File contents must be str, bytes, or a file-like object, not {!r}"
-                            .format(content))
+            raise TypeError("File contents must be str, bytes, or a file-like object, not {!r}".format(content))
         if filename in self.extra_files:
             if self.extra_files[filename] != content:
-                raise ValueError("File {!r} already exists"
-                                 .format(filename))
+                raise ValueError("File {!r} already exists".format(filename))
         else:
             self.extra_files[filename] = content
 
@@ -67,10 +61,7 @@ class Platform(ResourceManager, metaclass=ABCMeta):
     def _toolchain_env_var(self):
         return f"NMIGEN_ENV_{self.toolchain}"
 
-    def build(self, elaboratable, name="top",
-              build_dir="build", do_build=True,
-              program_opts=None, do_program=False,
-              **kwargs):
+    def build(self, elaboratable, name="top", build_dir="build", do_build=True, program_opts=None, do_program=False, **kwargs):
         # The following code performs a best-effort check for presence of required tools upfront,
         # before performing any build actions, to provide a better diagnostic. It does not handle
         # several corner cases:
@@ -156,8 +147,7 @@ class Platform(ResourceManager, metaclass=ABCMeta):
             if pin.dir == "oe":
                 add_pin_fragment(pin, self.get_diff_tristate(pin, p_port, n_port, attrs, invert))
             if pin.dir == "io":
-                add_pin_fragment(pin,
-                    self.get_diff_input_output(pin, p_port, n_port, attrs, invert))
+                add_pin_fragment(pin, self.get_diff_input_output(pin, p_port, n_port, attrs, invert))
 
         fragment._propagate_ports(ports=self.iter_ports(), all_undef_as_ports=False)
         return self.toolchain_prepare(fragment, name, **kwargs)
@@ -168,26 +158,24 @@ class Platform(ResourceManager, metaclass=ABCMeta):
         Convert the ``fragment`` and constraints recorded in this :class:`Platform` into
         a :class:`BuildPlan`.
         """
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def toolchain_program(self, products, name, **kwargs):
         """
         Extract bitstream for fragment ``name`` from ``products`` and download it to a target.
         """
-        raise NotImplementedError("Platform '{}' does not support programming"
-                                  .format(type(self).__name__))
+        raise NotImplementedError("Platform '{}' does not support programming".format(type(self).__name__))
 
     def _check_feature(self, feature, pin, attrs, valid_xdrs, valid_attrs):
         if not valid_xdrs:
-            raise NotImplementedError("Platform '{}' does not support {}"
-                                      .format(type(self).__name__, feature))
+            raise NotImplementedError("Platform '{}' does not support {}".format(type(self).__name__, feature))
         elif pin.xdr not in valid_xdrs:
-            raise NotImplementedError("Platform '{}' does not support {} for XDR {}"
-                                      .format(type(self).__name__, feature, pin.xdr))
+            raise NotImplementedError(
+                "Platform '{}' does not support {} for XDR {}".format(type(self).__name__, feature, pin.xdr)
+            )
 
         if not valid_attrs and attrs:
-            raise NotImplementedError("Platform '{}' does not support attributes for {}"
-                                      .format(type(self).__name__, feature))
+            raise NotImplementedError("Platform '{}' does not support attributes for {}".format(type(self).__name__, feature))
 
     @staticmethod
     def _invert_if(invert, value):
@@ -197,27 +185,25 @@ class Platform(ResourceManager, metaclass=ABCMeta):
             return value
 
     def get_input(self, pin, port, attrs, invert):
-        self._check_feature("single-ended input", pin, attrs,
-                            valid_xdrs=(0,), valid_attrs=None)
+        self._check_feature("single-ended input", pin, attrs, valid_xdrs=(0, ), valid_attrs=None)
 
         m = Module()
         m.d.comb += pin.i.eq(self._invert_if(invert, port))
         return m
 
     def get_output(self, pin, port, attrs, invert):
-        self._check_feature("single-ended output", pin, attrs,
-                            valid_xdrs=(0,), valid_attrs=None)
+        self._check_feature("single-ended output", pin, attrs, valid_xdrs=(0, ), valid_attrs=None)
 
         m = Module()
         m.d.comb += port.eq(self._invert_if(invert, pin.o))
         return m
 
     def get_tristate(self, pin, port, attrs, invert):
-        self._check_feature("single-ended tristate", pin, attrs,
-                            valid_xdrs=(0,), valid_attrs=None)
+        self._check_feature("single-ended tristate", pin, attrs, valid_xdrs=(0, ), valid_attrs=None)
 
         m = Module()
-        m.submodules += Instance("$tribuf",
+        m.submodules += Instance(
+            "$tribuf",
             p_WIDTH=pin.width,
             i_EN=pin.oe,
             i_A=self._invert_if(invert, pin.o),
@@ -226,11 +212,11 @@ class Platform(ResourceManager, metaclass=ABCMeta):
         return m
 
     def get_input_output(self, pin, port, attrs, invert):
-        self._check_feature("single-ended input/output", pin, attrs,
-                            valid_xdrs=(0,), valid_attrs=None)
+        self._check_feature("single-ended input/output", pin, attrs, valid_xdrs=(0, ), valid_attrs=None)
 
         m = Module()
-        m.submodules += Instance("$tribuf",
+        m.submodules += Instance(
+            "$tribuf",
             p_WIDTH=pin.width,
             i_EN=pin.oe,
             i_A=self._invert_if(invert, pin.o),
@@ -240,35 +226,33 @@ class Platform(ResourceManager, metaclass=ABCMeta):
         return m
 
     def get_diff_input(self, pin, p_port, n_port, attrs, invert):
-        self._check_feature("differential input", pin, attrs,
-                            valid_xdrs=(), valid_attrs=None)
+        self._check_feature("differential input", pin, attrs, valid_xdrs=(), valid_attrs=None)
 
     def get_diff_output(self, pin, p_port, n_port, attrs, invert):
-        self._check_feature("differential output", pin, attrs,
-                            valid_xdrs=(), valid_attrs=None)
+        self._check_feature("differential output", pin, attrs, valid_xdrs=(), valid_attrs=None)
 
     def get_diff_tristate(self, pin, p_port, n_port, attrs, invert):
-        self._check_feature("differential tristate", pin, attrs,
-                            valid_xdrs=(), valid_attrs=None)
+        self._check_feature("differential tristate", pin, attrs, valid_xdrs=(), valid_attrs=None)
 
     def get_diff_input_output(self, pin, p_port, n_port, attrs, invert):
-        self._check_feature("differential input/output", pin, attrs,
-                            valid_xdrs=(), valid_attrs=None)
+        self._check_feature("differential input/output", pin, attrs, valid_xdrs=(), valid_attrs=None)
 
 
 class TemplatedPlatform(Platform):
-    toolchain         = abstractproperty()
-    file_templates    = abstractproperty()
+    toolchain = abstractproperty()
+    file_templates = abstractproperty()
     command_templates = abstractproperty()
 
     build_script_templates = {
-        "build_{{name}}.sh": """
+        "build_{{name}}.sh":
+        """
             # {{autogenerated}}
             set -e{{verbose("x")}}
             [ -n "${{platform._toolchain_env_var}}" ] && . "${{platform._toolchain_env_var}}"
             {{emit_commands("sh")}}
         """,
-        "build_{{name}}.bat": """
+        "build_{{name}}.bat":
+        """
             @rem {{autogenerated}}
             {{quiet("@echo off")}}
             if defined {{platform._toolchain_env_var}} call %{{platform._toolchain_env_var}}%
@@ -293,9 +277,10 @@ class TemplatedPlatform(Platform):
         # in the first place.
         invalid_char = re.match(r"[^A-Za-z0-9_]", name)
         if invalid_char:
-            raise ValueError("Design name {!r} contains invalid character {!r}; only alphanumeric "
-                             "characters are valid in design names"
-                             .format(name, invalid_char.group(0)))
+            raise ValueError(
+                "Design name {!r} contains invalid character {!r}; only alphanumeric "
+                "characters are valid in design names".format(name, invalid_char.group(0))
+            )
 
         # This notice serves a dual purpose: to explain that the file is autogenerated,
         # and to incorporate the nMigen version into generated code.
@@ -307,12 +292,10 @@ class TemplatedPlatform(Platform):
             return rtlil_text
 
         def emit_verilog(opts=()):
-            return verilog._convert_rtlil_text(rtlil_text,
-                strip_internal_attrs=True, write_verilog_opts=opts)
+            return verilog._convert_rtlil_text(rtlil_text, strip_internal_attrs=True, write_verilog_opts=opts)
 
         def emit_debug_verilog(opts=()):
-            return verilog._convert_rtlil_text(rtlil_text,
-                strip_internal_attrs=False, write_verilog_opts=opts)
+            return verilog._convert_rtlil_text(rtlil_text, strip_internal_attrs=False, write_verilog_opts=opts)
 
         def emit_commands(syntax):
             commands = []
@@ -330,8 +313,7 @@ class TemplatedPlatform(Platform):
                 commands.append(template.format(env_var=env_var, name=name))
 
             for index, command_tpl in enumerate(self.command_templates):
-                command = render(command_tpl, origin="<command#{}>".format(index + 1),
-                                 syntax=syntax)
+                command = render(command_tpl, origin="<command#{}>".format(index + 1), syntax=syntax)
                 command = re.sub(r"\s+", " ", command)
                 if syntax == "sh":
                     commands.append(command)
@@ -383,6 +365,7 @@ class TemplatedPlatform(Platform):
                     return match.group(2)
                 else:
                     return "_{:02x}_".format(ord(match.group(1)[0]))
+
             return "".join(escape_one(m) for m in re.finditer(r"([^A-Za-z0-9_])|(.)", string))
 
         def tcl_escape(string):
@@ -405,16 +388,15 @@ class TemplatedPlatform(Platform):
 
         def render(source, origin, syntax=None):
             try:
-                source   = textwrap.dedent(source).strip()
-                compiled = jinja2.Template(source,
-                    trim_blocks=True, lstrip_blocks=True, undefined=jinja2.StrictUndefined)
+                source = textwrap.dedent(source).strip()
+                compiled = jinja2.Template(source, trim_blocks=True, lstrip_blocks=True, undefined=jinja2.StrictUndefined)
                 compiled.environment.filters["options"] = options
                 compiled.environment.filters["hierarchy"] = hierarchy
                 compiled.environment.filters["ascii_escape"] = ascii_escape
                 compiled.environment.filters["tcl_escape"] = tcl_escape
                 compiled.environment.filters["tcl_quote"] = tcl_quote
             except jinja2.TemplateSyntaxError as e:
-                e.args = ("{} (at {}:{})".format(e.message, origin, e.lineno),)
+                e.args = ("{} (at {}:{})".format(e.message, origin, e.lineno), )
                 raise
             return compiled.render({
                 "name": name,
@@ -433,8 +415,7 @@ class TemplatedPlatform(Platform):
 
         plan = BuildPlan(script="build_{}".format(name))
         for filename_tpl, content_tpl in self.file_templates.items():
-            plan.add_file(render(filename_tpl, origin=filename_tpl),
-                          render(content_tpl, origin=content_tpl))
+            plan.add_file(render(filename_tpl, origin=filename_tpl), render(content_tpl, origin=content_tpl))
         for filename, content in self.extra_files.items():
             plan.add_file(filename, content)
         return plan

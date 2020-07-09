@@ -1,35 +1,33 @@
 from collections import OrderedDict
 
-
-__all__ = ["Pins", "PinsN", "DiffPairs", "DiffPairsN",
-           "Attrs", "Clock", "Subsignal", "Resource", "Connector"]
+__all__ = ["Pins", "PinsN", "DiffPairs", "DiffPairsN", "Attrs", "Clock", "Subsignal", "Resource", "Connector"]
 
 
 class Pins:
     def __init__(self, names, *, dir="io", invert=False, conn=None, assert_width=None):
         if not isinstance(names, str):
-            raise TypeError("Names must be a whitespace-separated string, not {!r}"
-                            .format(names))
+            raise TypeError("Names must be a whitespace-separated string, not {!r}".format(names))
         names = names.split()
 
         if conn is not None:
             conn_name, conn_number = conn
             if not (isinstance(conn_name, str) and isinstance(conn_number, (int, str))):
-                raise TypeError("Connector must be None or a pair of string (connector name) and "
-                                "integer/string (connector number), not {!r}"
-                                .format(conn))
+                raise TypeError(
+                    "Connector must be None or a pair of string (connector name) and "
+                    "integer/string (connector number), not {!r}".format(conn)
+                )
             names = ["{}_{}:{}".format(conn_name, conn_number, name) for name in names]
 
         if dir not in ("i", "o", "io", "oe"):
-            raise TypeError("Direction must be one of \"i\", \"o\", \"oe\", or \"io\", not {!r}"
-                            .format(dir))
+            raise TypeError("Direction must be one of \"i\", \"o\", \"oe\", or \"io\", not {!r}".format(dir))
 
         if assert_width is not None and len(names) != assert_width:
-            raise AssertionError("{} names are specified ({}), but {} names are expected"
-                                 .format(len(names), " ".join(names), assert_width))
+            raise AssertionError(
+                "{} names are specified ({}), but {} names are expected".format(len(names), " ".join(names), assert_width)
+            )
 
-        self.names  = names
-        self.dir    = dir
+        self.names = names
+        self.dir = dir
         self.invert = bool(invert)
 
     def __len__(self):
@@ -43,15 +41,13 @@ class Pins:
         for name in self.names:
             while ":" in name:
                 if name not in mapping:
-                    raise NameError("Resource {!r} refers to nonexistent connector pin {}"
-                                    .format(resource, name))
+                    raise NameError("Resource {!r} refers to nonexistent connector pin {}".format(resource, name))
                 name = mapping[name]
             mapped_names.append(name)
         return mapped_names
 
     def __repr__(self):
-        return "(pins{} {} {})".format("-n" if self.invert else "",
-            self.dir, " ".join(self.names))
+        return "(pins{} {} {})".format("-n" if self.invert else "", self.dir, " ".join(self.names))
 
 
 def PinsN(*args, **kwargs):
@@ -66,11 +62,12 @@ class DiffPairs:
         self.n = Pins(n, dir=dir, conn=conn, assert_width=assert_width)
 
         if len(self.p.names) != len(self.n.names):
-            raise TypeError("Positive and negative pins must have the same width, but {!r} "
-                            "and {!r} do not"
-                            .format(self.p, self.n))
+            raise TypeError(
+                "Positive and negative pins must have the same width, but {!r} "
+                "and {!r} do not".format(self.p, self.n)
+            )
 
-        self.dir    = dir
+        self.dir = dir
         self.invert = False
 
     def __len__(self):
@@ -80,8 +77,9 @@ class DiffPairs:
         return zip(self.p.names, self.n.names)
 
     def __repr__(self):
-        return "(diffpairs{} {} (p {}) (n {}))".format("-n" if self.invert else "",
-            self.dir, " ".join(self.p.names), " ".join(self.n.names))
+        return "(diffpairs{} {} (p {}) (n {}))".format(
+            "-n" if self.invert else "", self.dir, " ".join(self.p.names), " ".join(self.n.names)
+        )
 
 
 def DiffPairsN(*args, **kwargs):
@@ -94,9 +92,7 @@ class Attrs(OrderedDict):
     def __init__(self, **attrs):
         for key, value in attrs.items():
             if not (value is None or isinstance(value, (str, int)) or hasattr(value, "__call__")):
-                raise TypeError("Value of attribute {} must be None, int, str, or callable, "
-                                "not {!r}"
-                                .format(key, value))
+                raise TypeError("Value of attribute {} must be None, int, str, or callable, " "not {!r}".format(key, value))
 
         super().__init__(**attrs)
 
@@ -127,8 +123,8 @@ class Clock:
 
 class Subsignal:
     def __init__(self, name, *args):
-        self.name  = name
-        self.ios   = []
+        self.name = name
+        self.ios = []
         self.attrs = Attrs()
         self.clock = None
 
@@ -139,16 +135,18 @@ class Subsignal:
                 if not self.ios:
                     self.ios.append(arg)
                 else:
-                    raise TypeError("Pins and DiffPairs are incompatible with other location or "
-                                    "subsignal constraints, but {!r} appears after {!r}"
-                                    .format(arg, self.ios[-1]))
+                    raise TypeError(
+                        "Pins and DiffPairs are incompatible with other location or "
+                        "subsignal constraints, but {!r} appears after {!r}".format(arg, self.ios[-1])
+                    )
             elif isinstance(arg, Subsignal):
                 if not self.ios or isinstance(self.ios[-1], Subsignal):
                     self.ios.append(arg)
                 else:
-                    raise TypeError("Subsignal is incompatible with location constraints, but "
-                                    "{!r} appears after {!r}"
-                                    .format(arg, self.ios[-1]))
+                    raise TypeError(
+                        "Subsignal is incompatible with location constraints, but "
+                        "{!r} appears after {!r}".format(arg, self.ios[-1])
+                    )
             elif isinstance(arg, Attrs):
                 self.attrs.update(arg)
             elif isinstance(arg, Clock):
@@ -158,13 +156,15 @@ class Subsignal:
                     else:
                         raise ValueError("Clock constraint can be applied only once")
                 else:
-                    raise TypeError("Clock constraint can only be applied to Pins or DiffPairs, "
-                                    "not {!r}"
-                                    .format(self.ios[-1]))
+                    raise TypeError(
+                        "Clock constraint can only be applied to Pins or DiffPairs, "
+                        "not {!r}".format(self.ios[-1])
+                    )
             else:
-                raise TypeError("Constraint must be one of Pins, DiffPairs, Subsignal, Attrs, "
-                                "or Clock, not {!r}"
-                                .format(arg))
+                raise TypeError(
+                    "Constraint must be one of Pins, DiffPairs, Subsignal, Attrs, "
+                    "or Clock, not {!r}".format(arg)
+                )
 
     def _content_repr(self):
         parts = []
@@ -195,9 +195,9 @@ class Resource(Subsignal):
         if name_suffix:  # Only add "_" if we actually have a suffix.
             name_suffix = "_" + name_suffix
 
-        if number is None: # name_or_number is number
+        if number is None:  # name_or_number is number
             return cls(default_name + name_suffix, name_or_number, *ios)
-        else: # name_or_number is name
+        else:  # name_or_number is name
             return cls(name_or_number + name_suffix, number, *ios)
 
     def __init__(self, name, number, *args):
@@ -211,18 +211,16 @@ class Resource(Subsignal):
 
 class Connector:
     def __init__(self, name, number, io, *, conn=None):
-        self.name    = name
-        self.number  = number
+        self.name = name
+        self.number = number
         mapping = OrderedDict()
 
         if isinstance(io, dict):
             for conn_pin, plat_pin in io.items():
                 if not isinstance(conn_pin, str):
-                    raise TypeError("Connector pin name must be a string, not {!r}"
-                                    .format(conn_pin))
+                    raise TypeError("Connector pin name must be a string, not {!r}".format(conn_pin))
                 if not isinstance(plat_pin, str):
-                    raise TypeError("Platform pin name must be a string, not {!r}"
-                                    .format(plat_pin))
+                    raise TypeError("Platform pin name must be a string, not {!r}".format(plat_pin))
                 mapping[conn_pin] = plat_pin
 
         elif isinstance(io, str):
@@ -232,15 +230,15 @@ class Connector:
 
                 mapping[str(conn_pin)] = plat_pin
         else:
-            raise TypeError("Connector I/Os must be a dictionary or a string, not {!r}"
-                            .format(io))
+            raise TypeError("Connector I/Os must be a dictionary or a string, not {!r}".format(io))
 
         if conn is not None:
             conn_name, conn_number = conn
             if not (isinstance(conn_name, str) and isinstance(conn_number, (int, str))):
-                raise TypeError("Connector must be None or a pair of string (connector name) and "
-                                "integer/string (connector number), not {!r}"
-                                .format(conn))
+                raise TypeError(
+                    "Connector must be None or a pair of string (connector name) and "
+                    "integer/string (connector number), not {!r}".format(conn)
+                )
 
             for conn_pin, plat_pin in mapping.items():
                 mapping[conn_pin] = "{}_{}:{}".format(conn_name, conn_number, plat_pin)
@@ -248,9 +246,9 @@ class Connector:
         self.mapping = mapping
 
     def __repr__(self):
-        return "(connector {} {} {})".format(self.name, self.number,
-                                             " ".join("{}=>{}".format(conn, plat)
-                                                      for conn, plat in self.mapping.items()))
+        return "(connector {} {} {})".format(
+            self.name, self.number, " ".join("{}=>{}".format(conn, plat) for conn, plat in self.mapping.items())
+        )
 
     def __len__(self):
         return len(self.mapping)

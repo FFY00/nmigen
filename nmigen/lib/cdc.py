@@ -1,14 +1,12 @@
 from .._utils import deprecated
 from .. import *
 
-
 __all__ = ["FFSynchronizer", "AsyncFFSynchronizer", "ResetSynchronizer", "PulseSynchronizer"]
 
 
 def _check_stages(stages):
     if not isinstance(stages, int) or stages < 1:
-        raise TypeError("Synchronization stage count must be a positive integer, not {!r}"
-                        .format(stages))
+        raise TypeError("Synchronization stage count must be a positive integer, not {!r}".format(stages))
     if stages < 2:
         raise ValueError("Synchronization stage count may not safely be less than 2")
 
@@ -62,17 +60,16 @@ class FFSynchronizer(Elaboratable):
 
     :class:`FFSynchronizer` is reset by the ``o_domain`` reset only.
     """
-    def __init__(self, i, o, *, o_domain="sync", reset=0, reset_less=True, stages=2,
-                 max_input_delay=None):
+    def __init__(self, i, o, *, o_domain="sync", reset=0, reset_less=True, stages=2, max_input_delay=None):
         _check_stages(stages)
 
         self.i = i
         self.o = o
 
-        self._reset      = reset
+        self._reset = reset
         self._reset_less = reset_less
-        self._o_domain   = o_domain
-        self._stages     = stages
+        self._o_domain = o_domain
+        self._stages = stages
 
         self._max_input_delay = max_input_delay
 
@@ -81,14 +78,16 @@ class FFSynchronizer(Elaboratable):
             return platform.get_ff_sync(self)
 
         if self._max_input_delay is not None:
-            raise NotImplementedError("Platform '{}' does not support constraining input delay "
-                                      "for FFSynchronizer"
-                                      .format(type(platform).__name__))
+            raise NotImplementedError(
+                "Platform '{}' does not support constraining input delay "
+                "for FFSynchronizer".format(type(platform).__name__)
+            )
 
         m = Module()
-        flops = [Signal(self.i.shape(), name="stage{}".format(index),
-                        reset=self._reset, reset_less=self._reset_less)
-                 for index in range(self._stages)]
+        flops = [
+            Signal(self.i.shape(), name="stage{}".format(index), reset=self._reset, reset_less=self._reset_less)
+            for index in range(self._stages)
+        ]
         for i, o in zip((self.i, *flops), flops):
             m.d[self._o_domain] += o.eq(i)
         m.d.comb += self.o.eq(flops[-1])
@@ -135,9 +134,7 @@ class AsyncFFSynchronizer(Elaboratable):
         self._stages = stages
 
         if async_edge not in ("pos", "neg"):
-            raise ValueError("AsyncFFSynchronizer async edge must be one of 'pos' or 'neg', "
-                             "not {!r}"
-                             .format(async_edge))
+            raise ValueError("AsyncFFSynchronizer async edge must be one of 'pos' or 'neg', " "not {!r}".format(async_edge))
         self._edge = async_edge
 
         self._max_input_delay = max_input_delay
@@ -147,14 +144,14 @@ class AsyncFFSynchronizer(Elaboratable):
             return platform.get_async_ff_sync(self)
 
         if self._max_input_delay is not None:
-            raise NotImplementedError("Platform '{}' does not support constraining input delay "
-                                      "for AsyncFFSynchronizer"
-                                      .format(type(platform).__name__))
+            raise NotImplementedError(
+                "Platform '{}' does not support constraining input delay "
+                "for AsyncFFSynchronizer".format(type(platform).__name__)
+            )
 
         m = Module()
         m.domains += ClockDomain("async_ff", async_reset=True, local=True)
-        flops = [Signal(1, name="stage{}".format(index), reset=1)
-                 for index in range(self._stages)]
+        flops = [Signal(1, name="stage{}".format(index), reset=1) for index in range(self._stages)]
         for i, o in zip((0, *flops), flops):
             m.d.async_ff += o.eq(i)
 
@@ -163,10 +160,7 @@ class AsyncFFSynchronizer(Elaboratable):
         else:
             m.d.comb += ResetSignal("async_ff").eq(~self.i)
 
-        m.d.comb += [
-            ClockSignal("async_ff").eq(ClockSignal(self._domain)),
-            self.o.eq(flops[-1])
-        ]
+        m.d.comb += [ClockSignal("async_ff").eq(ClockSignal(self._domain)), self.o.eq(flops[-1])]
 
         return m
 
@@ -212,8 +206,13 @@ class ResetSynchronizer(Elaboratable):
         self._max_input_delay = max_input_delay
 
     def elaborate(self, platform):
-        return AsyncFFSynchronizer(self.arst, ResetSignal(self._domain), domain=self._domain,
-                stages=self._stages, max_input_delay=self._max_input_delay)
+        return AsyncFFSynchronizer(
+            self.arst,
+            ResetSignal(self._domain),
+            domain=self._domain,
+            stages=self._stages,
+            max_input_delay=self._max_input_delay
+        )
 
 
 class PulseSynchronizer(Elaboratable):

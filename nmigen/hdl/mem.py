@@ -5,7 +5,6 @@ from .. import tracer
 from .ast import *
 from .ir import Elaboratable, Instance
 
-
 __all__ = ["Memory", "ReadPort", "WritePort", "DummyPort"]
 
 
@@ -37,13 +36,11 @@ class Memory:
     """
     def __init__(self, *, width, depth, init=None, name=None, attrs=None, simulate=True):
         if not isinstance(width, int) or width < 0:
-            raise TypeError("Memory width must be a non-negative integer, not {!r}"
-                            .format(width))
+            raise TypeError("Memory width must be a non-negative integer, not {!r}".format(width))
         if not isinstance(depth, int) or depth < 0:
-            raise TypeError("Memory depth must be a non-negative integer, not {!r}"
-                            .format(depth))
+            raise TypeError("Memory depth must be a non-negative integer, not {!r}".format(depth))
 
-        self.name    = name or tracer.get_var_name(depth=2, default="$memory")
+        self.name = name or tracer.get_var_name(depth=2, default="$memory")
         self.src_loc = tracer.get_src_loc()
 
         self.width = width
@@ -54,8 +51,7 @@ class Memory:
         self._array = Array()
         if simulate:
             for addr in range(self.depth):
-                self._array.append(Signal(self.width, name="{}({})"
-                                          .format(name or "memory", addr)))
+                self._array.append(Signal(self.width, name="{}({})".format(name or "memory", addr)))
 
         self.init = init
 
@@ -67,8 +63,9 @@ class Memory:
     def init(self, new_init):
         self._init = [] if new_init is None else list(new_init)
         if len(self.init) > self.depth:
-            raise ValueError("Memory initialization value count exceed memory depth ({} > {})"
-                             .format(len(self.init), self.depth))
+            raise ValueError(
+                "Memory initialization value count exceed memory depth ({} > {})".format(len(self.init), self.depth)
+            )
 
         try:
             for addr in range(len(self._array)):
@@ -77,8 +74,7 @@ class Memory:
                 else:
                     self._array[addr].reset = 0
         except TypeError as e:
-            raise TypeError("Memory initialization value at address {:x}: {}"
-                            .format(addr, e)) from None
+            raise TypeError("Memory initialization value at address {:x}: {}".format(addr, e)) from None
 
     def read_port(self, *, src_loc_at=0, **kwargs):
         return ReadPort(self, src_loc_at=1 + src_loc_at, **kwargs)
@@ -96,22 +92,20 @@ class ReadPort(Elaboratable):
         if domain == "comb" and not transparent:
             raise ValueError("Read port cannot be simultaneously asynchronous and non-transparent")
 
-        self.memory      = memory
-        self.domain      = domain
+        self.memory = memory
+        self.domain = domain
         self.transparent = transparent
 
-        self.addr = Signal(range(memory.depth),
-                           name="{}_r_addr".format(memory.name), src_loc_at=1 + src_loc_at)
-        self.data = Signal(memory.width,
-                           name="{}_r_data".format(memory.name), src_loc_at=1 + src_loc_at)
+        self.addr = Signal(range(memory.depth), name="{}_r_addr".format(memory.name), src_loc_at=1 + src_loc_at)
+        self.data = Signal(memory.width, name="{}_r_data".format(memory.name), src_loc_at=1 + src_loc_at)
         if self.domain != "comb" and not transparent:
-            self.en = Signal(name="{}_r_en".format(memory.name), reset=1,
-                             src_loc_at=1 + src_loc_at)
+            self.en = Signal(name="{}_r_en".format(memory.name), reset=1, src_loc_at=1 + src_loc_at)
         else:
             self.en = Const(1)
 
     def elaborate(self, platform):
-        f = Instance("$memrd",
+        f = Instance(
+            "$memrd",
             p_MEMID=self.memory,
             p_ABITS=self.addr.width,
             p_WIDTH=self.data.width,
@@ -129,11 +123,7 @@ class ReadPort(Elaboratable):
             f.add_driver(self.data)
         elif not self.transparent:
             # Synchronous, read-before-write port
-            f.add_statements(
-                Switch(self.en, {
-                    1: self.data.eq(self.memory._array[self.addr])
-                })
-            )
+            f.add_statements(Switch(self.en, {1: self.data.eq(self.memory._array[self.addr])}))
             f.add_driver(self.data, self.domain)
         else:
             # Synchronous, write-through port
@@ -149,10 +139,12 @@ class ReadPort(Elaboratable):
             latch_addr = Signal.like(self.addr)
             f.add_statements(
                 latch_addr.eq(self.addr),
-                Switch(ClockSignal(self.domain), {
-                    0: self.data.eq(self.data),
-                    1: self.data.eq(self.memory._array[latch_addr]),
-                }),
+                Switch(
+                    ClockSignal(self.domain), {
+                        0: self.data.eq(self.data),
+                        1: self.data.eq(self.memory._array[latch_addr]),
+                    }
+                ),
             )
             f.add_driver(latch_addr, self.domain)
             f.add_driver(self.data)
@@ -164,28 +156,26 @@ class WritePort(Elaboratable):
         if granularity is None:
             granularity = memory.width
         if not isinstance(granularity, int) or granularity < 0:
-            raise TypeError("Write port granularity must be a non-negative integer, not {!r}"
-                            .format(granularity))
+            raise TypeError("Write port granularity must be a non-negative integer, not {!r}".format(granularity))
         if granularity > memory.width:
-            raise ValueError("Write port granularity must not be greater than memory width "
-                             "({} > {})"
-                             .format(granularity, memory.width))
+            raise ValueError(
+                "Write port granularity must not be greater than memory width "
+                "({} > {})".format(granularity, memory.width)
+            )
         if memory.width // granularity * granularity != memory.width:
             raise ValueError("Write port granularity must divide memory width evenly")
 
-        self.memory       = memory
-        self.domain       = domain
-        self.granularity  = granularity
+        self.memory = memory
+        self.domain = domain
+        self.granularity = granularity
 
-        self.addr = Signal(range(memory.depth),
-                           name="{}_w_addr".format(memory.name), src_loc_at=1 + src_loc_at)
-        self.data = Signal(memory.width,
-                           name="{}_w_data".format(memory.name), src_loc_at=1 + src_loc_at)
-        self.en   = Signal(memory.width // granularity,
-                           name="{}_w_en".format(memory.name), src_loc_at=1 + src_loc_at)
+        self.addr = Signal(range(memory.depth), name="{}_w_addr".format(memory.name), src_loc_at=1 + src_loc_at)
+        self.data = Signal(memory.width, name="{}_w_data".format(memory.name), src_loc_at=1 + src_loc_at)
+        self.en = Signal(memory.width // granularity, name="{}_w_en".format(memory.name), src_loc_at=1 + src_loc_at)
 
     def elaborate(self, platform):
-        f = Instance("$memwr",
+        f = Instance(
+            "$memwr",
             p_MEMID=self.memory,
             p_ABITS=self.addr.width,
             p_WIDTH=self.data.width,
@@ -200,12 +190,12 @@ class WritePort(Elaboratable):
         if len(self.en) > 1:
             for index, en_bit in enumerate(self.en):
                 offset = index * self.granularity
-                bits   = slice(offset, offset + self.granularity)
+                bits = slice(offset, offset + self.granularity)
                 write_data = self.memory._array[self.addr][bits].eq(self.data[bits])
-                f.add_statements(Switch(en_bit, { 1: write_data }))
+                f.add_statements(Switch(en_bit, {1: write_data}))
         else:
             write_data = self.memory._array[self.addr].eq(self.data)
-            f.add_statements(Switch(self.en, { 1: write_data }))
+            f.add_statements(Switch(self.en, {1: write_data}))
         for signal in self.memory._array:
             f.add_driver(signal, self.domain)
         return f
@@ -226,9 +216,6 @@ class DummyPort:
         if name is None:
             name = tracer.get_var_name(depth=2, default="dummy")
 
-        self.addr = Signal(addr_width,
-                           name="{}_addr".format(name), src_loc_at=1)
-        self.data = Signal(data_width,
-                           name="{}_data".format(name), src_loc_at=1)
-        self.en   = Signal(data_width // granularity,
-                           name="{}_en".format(name), src_loc_at=1)
+        self.addr = Signal(addr_width, name="{}_addr".format(name), src_loc_at=1)
+        self.data = Signal(data_width, name="{}_data".format(name), src_loc_at=1)
+        self.en = Signal(data_width // granularity, name="{}_en".format(name), src_loc_at=1)

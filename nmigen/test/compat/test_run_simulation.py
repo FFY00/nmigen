@@ -5,7 +5,6 @@ from .support import SimCase
 
 class RunSimulation(SimCase, unittest.TestCase):
     """ test for https://github.com/nmigen/nmigen/issues/344 """
-
     class TestBench(Elaboratable):
         def __init__(self):
             self.a = Signal()

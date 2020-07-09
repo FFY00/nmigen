@@ -13,14 +13,15 @@ class SyncFIFOCase(SimCase, unittest.TestCase):
             self.submodules.dut = SyncFIFO(64, 2)
 
             self.sync += [
-                If(self.dut.we & self.dut.writable,
-                    self.dut.din[:32].eq(self.dut.din[:32] + 1),
+                If(
+                    self.dut.we & self.dut.writable, self.dut.din[:32].eq(self.dut.din[:32] + 1),
                     self.dut.din[32:].eq(self.dut.din[32:] + 2)
                 )
             ]
 
     def test_run_sequence(self):
         seq = list(range(20))
+
         def gen():
             for cycle in count():
                 # fire re and we at "random"
@@ -33,6 +34,7 @@ class SyncFIFOCase(SimCase, unittest.TestCase):
                     except IndexError:
                         break
                     self.assertEqual((yield self.tb.dut.dout[:32]), i)
-                    self.assertEqual((yield self.tb.dut.dout[32:]), i*2)
+                    self.assertEqual((yield self.tb.dut.dout[32:]), i * 2)
                 yield
+
         self.run_with(gen())

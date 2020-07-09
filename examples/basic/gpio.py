@@ -6,7 +6,7 @@ from nmigen.cli import main
 class GPIO(Elaboratable):
     def __init__(self, pins, bus):
         self.pins = pins
-        self.bus  = bus
+        self.bus = bus
 
     def elaborate(self, platform):
         m = Module()
@@ -18,10 +18,10 @@ class GPIO(Elaboratable):
 
 if __name__ == "__main__":
     bus = Record([
-        ("addr",   3),
+        ("addr", 3),
         ("r_data", 1),
         ("w_data", 1),
-        ("we",     1),
+        ("we", 1),
     ])
     pins = Signal(8)
     gpio = GPIO(Array(pins), bus)

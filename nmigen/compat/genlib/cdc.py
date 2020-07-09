@@ -7,7 +7,6 @@ from ...hdl.ast import *
 from ..fhdl.module import CompatModule
 from ..fhdl.structure import If
 
-
 __all__ = ["MultiReg", "PulseSynchronizer", "GrayCounter", "GrayDecoder"]
 
 
@@ -21,9 +20,11 @@ class MultiReg(NativeFFSynchronizer):
         if n != 2:
             old_opts.append(", n={!r}".format(n))
             new_opts.append(", stages={!r}".format(n))
-        warnings.warn("instead of `MultiReg(...{})`, use `FFSynchronizer(...{})`"
-                      .format("".join(old_opts), "".join(new_opts)),
-                      DeprecationWarning, stacklevel=2)
+        warnings.warn(
+            "instead of `MultiReg(...{})`, use `FFSynchronizer(...{})`".format("".join(old_opts), "".join(new_opts)),
+            DeprecationWarning,
+            stacklevel=2
+        )
         super().__init__(i, o, o_domain=odomain, stages=n, reset=reset)
         self.odomain = odomain
 
@@ -46,17 +47,10 @@ class GrayCounter(CompatModule):
         ###
 
         self.comb += [
-            If(self.ce,
-                self.q_next_binary.eq(self.q_binary + 1)
-            ).Else(
-                self.q_next_binary.eq(self.q_binary)
-            ),
+            If(self.ce, self.q_next_binary.eq(self.q_binary + 1)).Else(self.q_next_binary.eq(self.q_binary)),
             self.q_next.eq(self.q_next_binary ^ self.q_next_binary[1:])
         ]
-        self.sync += [
-            self.q_binary.eq(self.q_next_binary),
-            self.q.eq(self.q_next)
-        ]
+        self.sync += [self.q_binary.eq(self.q_next_binary), self.q.eq(self.q_next)]
 
 
 @deprecated("instead of `migen.genlib.cdc.GrayDecoder`, use `nmigen.lib.coding.GrayDecoder`")
@@ -69,6 +63,6 @@ class GrayDecoder(CompatModule):
 
         o_comb = Signal(width)
         self.comb += o_comb[-1].eq(self.i[-1])
-        for i in reversed(range(width-1)):
-            self.comb += o_comb[i].eq(o_comb[i+1] ^ self.i[i])
+        for i in reversed(range(width - 1)):
+            self.comb += o_comb[i].eq(o_comb[i + 1] ^ self.i[i])
         self.sync += self.o.eq(o_comb)

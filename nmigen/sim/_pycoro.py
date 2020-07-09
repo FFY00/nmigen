@@ -6,7 +6,6 @@ from ._cmds import *
 from ._core import Process
 from ._pyrtl import _ValueCompiler, _RHSValueCompiler, _StatementCompiler
 
-
 __all__ = ["PyCoroProcess"]
 
 
@@ -23,11 +22,7 @@ class PyCoroProcess(Process):
         self.runnable = True
         self.passive = False
         self.coroutine = self.constructor()
-        self.exec_locals = {
-            "slots": self.state.slots,
-            "result": None,
-            **_ValueCompiler.helpers
-        }
+        self.exec_locals = {"slots": self.state.slots, "result": None, **_ValueCompiler.helpers}
         self.waits_on = set()
 
     def src_loc(self):
@@ -58,13 +53,11 @@ class PyCoroProcess(Process):
                 response = None
 
                 if isinstance(command, Value):
-                    exec(_RHSValueCompiler.compile(self.state, command, mode="curr"),
-                        self.exec_locals)
+                    exec(_RHSValueCompiler.compile(self.state, command, mode="curr"), self.exec_locals)
                     response = Const.normalize(self.exec_locals["result"], command.shape())
 
                 elif isinstance(command, Statement):
-                    exec(_StatementCompiler.compile(self.state, command),
-                        self.exec_locals)
+                    exec(_StatementCompiler.compile(self.state, command), self.exec_locals)
 
                 elif type(command) is Tick:
                     domain = command.domain
@@ -73,11 +66,11 @@ class PyCoroProcess(Process):
                     elif domain in self.domains:
                         domain = self.domains[domain]
                     else:
-                        raise NameError("Received command {!r} that refers to a nonexistent "
-                                        "domain {!r} from process {!r}"
-                                        .format(command, command.domain, self.src_loc()))
-                    self.state.add_trigger(self, domain.clk,
-                                           trigger=1 if domain.clk_edge == "pos" else 0)
+                        raise NameError(
+                            "Received command {!r} that refers to a nonexistent "
+                            "domain {!r} from process {!r}".format(command, command.domain, self.src_loc())
+                        )
+                    self.state.add_trigger(self, domain.clk, trigger=1 if domain.clk_edge == "pos" else 0)
                     if domain.rst is not None and domain.async_reset:
                         self.state.add_trigger(self, domain.rst, trigger=1)
                     return
@@ -96,15 +89,15 @@ class PyCoroProcess(Process):
                 elif type(command) is Active:
                     self.passive = False
 
-                elif command is None: # only possible if self.default_cmd is None
-                    raise TypeError("Received default command from process {!r} that was added "
-                                    "with add_process(); did you mean to add this process with "
-                                    "add_sync_process() instead?"
-                                    .format(self.src_loc()))
+                elif command is None:  # only possible if self.default_cmd is None
+                    raise TypeError(
+                        "Received default command from process {!r} that was added "
+                        "with add_process(); did you mean to add this process with "
+                        "add_sync_process() instead?".format(self.src_loc())
+                    )
 
                 else:
-                    raise TypeError("Received unsupported command {!r} from process {!r}"
-                                    .format(command, self.src_loc()))
+                    raise TypeError("Received unsupported command {!r} from process {!r}".format(command, self.src_loc()))
 
             except StopIteration:
                 self.passive = True

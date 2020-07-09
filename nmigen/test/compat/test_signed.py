@@ -22,7 +22,7 @@ class SignedCase(SimCase, unittest.TestCase):
                 for bsign in 1, -1:
                     for f in comps:
                         r = Signal()
-                        r0 = f(asign*self.a, bsign*self.b)
+                        r0 = f(asign * self.a, bsign * self.b)
                         self.comb += r.eq(r0)
                         self.vals.append((asign, bsign, f, r, r0.op))
 
@@ -35,8 +35,7 @@ class SignedCase(SimCase, unittest.TestCase):
                 a = yield self.tb.a
                 b = yield self.tb.b
                 for asign, bsign, f, r, op in self.tb.vals:
-                    r, r0 = (yield r), f(asign*a, bsign*b)
-                    self.assertEqual(r, int(r0),
-                            "got {}, want {}*{} {} {}*{} = {}".format(
-                                r, asign, a, op, bsign, b, r0))
+                    r, r0 = (yield r), f(asign * a, bsign * b)
+                    self.assertEqual(r, int(r0), "got {}, want {}*{} {} {}*{} = {}".format(r, asign, a, op, bsign, b, r0))
+
         self.run_with(gen())

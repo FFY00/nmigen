@@ -1,24 +1,20 @@
 from .._toolchain.yosys import *
 from . import rtlil
 
-
 __all__ = ["YosysError", "convert", "convert_fragment"]
 
 
 def _convert_rtlil_text(rtlil_text, black_boxes, *, src_loc_at=0):
     if black_boxes is not None:
         if not isinstance(black_boxes, dict):
-            raise TypeError("CXXRTL black boxes must be a dictionary, not {!r}"
-                            .format(black_boxes))
+            raise TypeError("CXXRTL black boxes must be a dictionary, not {!r}".format(black_boxes))
         for box_name, box_source in black_boxes.items():
             if not isinstance(box_name, str):
-                raise TypeError("CXXRTL black box name must be a string, not {!r}"
-                                .format(box_name))
+                raise TypeError("CXXRTL black box name must be a string, not {!r}".format(box_name))
             if not isinstance(box_source, str):
-                raise TypeError("CXXRTL black box source code must be a string, not {!r}"
-                                .format(box_source))
+                raise TypeError("CXXRTL black box source code must be a string, not {!r}".format(box_source))
 
-     # FIXME: update this requirement once Yosys updates its node version
+    # FIXME: update this requirement once Yosys updates its node version
     yosys = find_yosys(lambda ver: ver >= (0, 9))
 
     script = []

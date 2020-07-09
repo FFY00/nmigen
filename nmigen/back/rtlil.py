@@ -6,7 +6,6 @@ from contextlib import contextmanager
 from .._utils import bits_for, flatten
 from ..hdl import ast, rec, ir, mem, xfrm
 
-
 __all__ = ["convert", "convert_fragment"]
 
 
@@ -38,7 +37,7 @@ def const(value):
     if isinstance(value, str):
         return "\"{}\"".format(value.translate(_escape_map))
     elif isinstance(value, int):
-        if value in range(0, 2**31-1):
+        if value in range(0, 2**31 - 1):
             return "{:d}".format(value)
         else:
             # This code path is only used for Instances, where Verilog-like behavior is desirable.
@@ -55,7 +54,7 @@ def const(value):
 class _Namer:
     def __init__(self):
         super().__init__()
-        self._anon  = 0
+        self._anon = 0
         self._index = 0
         self._names = set()
 
@@ -97,8 +96,7 @@ class _ProxiedBuilder:
 
 class _AttrBuilder:
     def _attribute(self, name, value, *, indent=0):
-        self._append("{}attribute \\{} {}\n",
-                     "  " * indent, name, const(value))
+        self._append("{}attribute \\{} {}\n", "  " * indent, name, const(value))
 
     def _attributes(self, attrs, *, src=None, **kwargs):
         for name, value in attrs.items():
@@ -117,7 +115,7 @@ class _ModuleBuilder(_Namer, _BufferedBuilder, _AttrBuilder):
     def __init__(self, rtlil, name, attrs):
         super().__init__()
         self.rtlil = rtlil
-        self.name  = name
+        self.name = name
         self.attrs = {"generator": "nMigen"}
         self.attrs.update(attrs)
 
@@ -135,10 +133,11 @@ class _ModuleBuilder(_Namer, _BufferedBuilder, _AttrBuilder):
         # to be at least 2**16 bits, and Yosys 0.9 breaks on wires of more than 2**32 bits, so
         # those numbers are our hard bounds. Use 2**24 as the arbitrary boundary beyond which
         # downstream bugs are more likely than not.
-        if width > 2 ** 24:
-            raise ImplementationLimit("Wire created at {} is {} bits wide, which is unlikely to "
-                                      "synthesize correctly"
-                                      .format(src or "unknown location", width))
+        if width > 2**24:
+            raise ImplementationLimit(
+                "Wire created at {} is {} bits wide, which is unlikely to "
+                "synthesize correctly".format(src or "unknown location", width)
+            )
 
         self._attributes(attrs, src=src, indent=1)
         name = self._make_name(name, local=False)
@@ -164,14 +163,11 @@ class _ModuleBuilder(_Namer, _BufferedBuilder, _AttrBuilder):
         self._append("  cell {} {}\n", kind, name)
         for param, value in params.items():
             if isinstance(value, float):
-                self._append("    parameter real \\{} \"{!r}\"\n",
-                             param, value)
+                self._append("    parameter real \\{} \"{!r}\"\n", param, value)
             elif signed(value):
-                self._append("    parameter signed \\{} {}\n",
-                             param, const(value))
+                self._append("    parameter signed \\{} {}\n", param, const(value))
             else:
-                self._append("    parameter \\{} {}\n",
-                             param, const(value))
+                self._append("    parameter \\{} {}\n", param, const(value))
         for port, wire in ports.items():
             self._append("    connect {} {}\n", port, wire)
         self._append("  end\n")
@@ -186,9 +182,9 @@ class _ProcessBuilder(_BufferedBuilder, _AttrBuilder):
     def __init__(self, rtlil, name, attrs, src):
         super().__init__()
         self.rtlil = rtlil
-        self.name  = name
+        self.name = name
         self.attrs = {}
-        self.src   = src
+        self.src = src
 
     def __enter__(self):
         self._attributes(self.attrs, src=self.src, indent=1)
@@ -208,7 +204,7 @@ class _ProcessBuilder(_BufferedBuilder, _AttrBuilder):
 
 class _CaseBuilder(_ProxiedBuilder):
     def __init__(self, rtlil, indent):
-        self.rtlil  = rtlil
+        self.rtlil = rtlil
         self.indent = indent
 
     def __enter__(self):
@@ -226,10 +222,10 @@ class _CaseBuilder(_ProxiedBuilder):
 
 class _SwitchBuilder(_ProxiedBuilder, _AttrBuilder):
     def __init__(self, rtlil, cond, attrs, src, indent):
-        self.rtlil  = rtlil
-        self.cond   = cond
-        self.attrs  = attrs
-        self.src    = src
+        self.rtlil = rtlil
+        self.cond = cond
+        self.attrs = attrs
+        self.src = src
         self.indent = indent
 
     def __enter__(self):
@@ -245,16 +241,17 @@ class _SwitchBuilder(_ProxiedBuilder, _AttrBuilder):
         if values == ():
             self._append("{}case\n", "  " * (self.indent + 1))
         else:
-            self._append("{}case {}\n", "  " * (self.indent + 1),
-                         ", ".join("{}'{}".format(len(value), value) for value in values))
+            self._append(
+                "{}case {}\n", "  " * (self.indent + 1), ", ".join("{}'{}".format(len(value), value) for value in values)
+            )
         return _CaseBuilder(self.rtlil, self.indent + 2)
 
 
 class _SyncBuilder(_ProxiedBuilder):
     def __init__(self, rtlil, kind, cond):
         self.rtlil = rtlil
-        self.kind  = kind
-        self.cond  = cond
+        self.kind = kind
+        self.cond = cond
 
     def __enter__(self):
         if self.cond is None:
@@ -283,18 +280,18 @@ def srcs(src_locs):
 
 class LegalizeValue(Exception):
     def __init__(self, value, branches, src_loc):
-        self.value    = value
+        self.value = value
         self.branches = list(branches)
-        self.src_loc  = src_loc
+        self.src_loc = src_loc
 
 
 class _ValueCompilerState:
     def __init__(self, rtlil):
-        self.rtlil  = rtlil
-        self.wires  = ast.SignalDict()
+        self.rtlil = rtlil
+        self.wires = ast.SignalDict()
         self.driven = ast.SignalDict()
-        self.ports  = ast.SignalDict()
-        self.anys   = ast.ValueDict()
+        self.ports = ast.SignalDict()
+        self.anys = ast.ValueDict()
 
         self.expansions = ast.ValueDict()
 
@@ -333,12 +330,11 @@ class _ValueCompilerState:
             for value in signal._enum_class:
                 attrs["enum_value_{:0{}b}".format(value.value, signal.width)] = value.name
 
-        wire_curr = self.rtlil.wire(width=signal.width, name=wire_name,
-                                    port_id=port_id, port_kind=port_kind,
-                                    attrs=attrs, src=src(signal.src_loc))
+        wire_curr = self.rtlil.wire(
+            width=signal.width, name=wire_name, port_id=port_id, port_kind=port_kind, attrs=attrs, src=src(signal.src_loc)
+        )
         if signal in self.driven and self.driven[signal]:
-            wire_next = self.rtlil.wire(width=signal.width, name=wire_curr + "$next",
-                                        src=src(signal.src_loc))
+            wire_next = self.rtlil.wire(width=signal.width, name=wire_curr + "$next", src=src(signal.src_loc))
         else:
             wire_next = None
         self.wires[signal] = (wire_curr, wire_next)
@@ -375,22 +371,22 @@ class _ValueCompiler(xfrm.ValueVisitor):
             super().on_unknown(value)
 
     def on_ClockSignal(self, value):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def on_ResetSignal(self, value):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def on_Sample(self, value):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def on_Initial(self, value):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def on_Cat(self, value):
         return "{{ {} }}".format(" ".join(reversed([self(o) for o in value.parts])))
 
     def _prepare_value_for_Slice(self, value):
-        raise NotImplementedError # :nocov:
+        raise NotImplementedError  # :nocov:
 
     def on_Slice(self, value):
         if value.start == 0 and value.stop == len(value.value):
@@ -418,36 +414,36 @@ class _ValueCompiler(xfrm.ValueVisitor):
             return self.match_shape(elem, *value.shape())
         else:
             max_index = 1 << len(value.index)
-            max_elem  = len(value.elems)
+            max_elem = len(value.elems)
             raise LegalizeValue(value.index, range(min(max_index, max_elem)), value.src_loc)
 
 
 class _RHSValueCompiler(_ValueCompiler):
     operator_map = {
-        (1, "~"):    "$not",
-        (1, "-"):    "$neg",
-        (1, "b"):    "$reduce_bool",
-        (1, "r|"):   "$reduce_or",
-        (1, "r&"):   "$reduce_and",
-        (1, "r^"):   "$reduce_xor",
-        (2, "+"):    "$add",
-        (2, "-"):    "$sub",
-        (2, "*"):    "$mul",
-        (2, "//"):   "$div",
-        (2, "%"):    "$mod",
-        (2, "**"):   "$pow",
-        (2, "<<"):   "$sshl",
-        (2, ">>"):   "$sshr",
-        (2, "&"):    "$and",
-        (2, "^"):    "$xor",
-        (2, "|"):    "$or",
-        (2, "=="):   "$eq",
-        (2, "!="):   "$ne",
-        (2, "<"):    "$lt",
-        (2, "<="):   "$le",
-        (2, ">"):    "$gt",
-        (2, ">="):   "$ge",
-        (3, "m"):    "$mux",
+        (1, "~"): "$not",
+        (1, "-"): "$neg",
+        (1, "b"): "$reduce_bool",
+        (1, "r|"): "$reduce_or",
+        (1, "r&"): "$reduce_and",
+        (1, "r^"): "$reduce_xor",
+        (2, "+"): "$add",
+        (2, "-"): "$sub",
+        (2, "*"): "$mul",
+        (2, "//"): "$div",
+        (2, "%"): "$mod",
+        (2, "**"): "$pow",
+        (2, "<<"): "$sshl",
+        (2, ">>"): "$sshr",
+        (2, "&"): "$and",
+        (2, "^"): "$xor",
+        (2, "|"): "$or",
+        (2, "=="): "$eq",
+        (2, "!="): "$ne",
+        (2, "<"): "$lt",
+        (2, "<="): "$le",
+        (2, ">"): "$gt",
+        (2, ">="): "$ge",
+        (3, "m"): "$mux",
     }
 
     def on_value(self, value):
@@ -497,14 +493,19 @@ class _RHSValueCompiler(_ValueCompiler):
         arg_bits, arg_sign = arg.shape()
         res_bits, res_sign = value.shape()
         res = self.s.rtlil.wire(width=res_bits, src=src(value.src_loc))
-        self.s.rtlil.cell(self.operator_map[(1, value.operator)], ports={
-            "\\A": self(arg),
-            "\\Y": res,
-        }, params={
-            "A_SIGNED": arg_sign,
-            "A_WIDTH": arg_bits,
-            "Y_WIDTH": res_bits,
-        }, src=src(value.src_loc))
+        self.s.rtlil.cell(
+            self.operator_map[(1, value.operator)],
+            ports={
+                "\\A": self(arg),
+                "\\Y": res,
+            },
+            params={
+                "A_SIGNED": arg_sign,
+                "A_WIDTH": arg_bits,
+                "Y_WIDTH": res_bits,
+            },
+            src=src(value.src_loc)
+        )
         return res
 
     def match_shape(self, value, new_bits, new_sign):
@@ -516,14 +517,19 @@ class _RHSValueCompiler(_ValueCompiler):
             return self(ast.Slice(value, 0, new_bits))
 
         res = self.s.rtlil.wire(width=new_bits, src=src(value.src_loc))
-        self.s.rtlil.cell("$pos", ports={
-            "\\A": self(value),
-            "\\Y": res,
-        }, params={
-            "A_SIGNED": value_sign,
-            "A_WIDTH": value_bits,
-            "Y_WIDTH": new_bits,
-        }, src=src(value.src_loc))
+        self.s.rtlil.cell(
+            "$pos",
+            ports={
+                "\\A": self(value),
+                "\\Y": res,
+            },
+            params={
+                "A_SIGNED": value_sign,
+                "A_WIDTH": value_bits,
+                "Y_WIDTH": new_bits,
+            },
+            src=src(value.src_loc)
+        )
         return res
 
     def on_Operator_binary(self, value):
@@ -540,29 +546,37 @@ class _RHSValueCompiler(_ValueCompiler):
             rhs_wire = self.match_shape(rhs, rhs_bits, rhs_sign)
         res_bits, res_sign = value.shape()
         res = self.s.rtlil.wire(width=res_bits, src=src(value.src_loc))
-        self.s.rtlil.cell(self.operator_map[(2, value.operator)], ports={
-            "\\A": lhs_wire,
-            "\\B": rhs_wire,
-            "\\Y": res,
-        }, params={
-            "A_SIGNED": lhs_sign,
-            "A_WIDTH": lhs_bits,
-            "B_SIGNED": rhs_sign,
-            "B_WIDTH": rhs_bits,
-            "Y_WIDTH": res_bits,
-        }, src=src(value.src_loc))
+        self.s.rtlil.cell(
+            self.operator_map[(2, value.operator)],
+            ports={
+                "\\A": lhs_wire,
+                "\\B": rhs_wire,
+                "\\Y": res,
+            },
+            params={
+                "A_SIGNED": lhs_sign,
+                "A_WIDTH": lhs_bits,
+                "B_SIGNED": rhs_sign,
+                "B_WIDTH": rhs_bits,
+                "Y_WIDTH": res_bits,
+            },
+            src=src(value.src_loc)
+        )
         if value.operator in ("//", "%"):
             # RTLIL leaves division by zero undefined, but we require it to return zero.
             divmod_res = res
             res = self.s.rtlil.wire(width=res_bits, src=src(value.src_loc))
-            self.s.rtlil.cell("$mux", ports={
-                "\\A": divmod_res,
-                "\\B": self(ast.Const(0, ast.Shape(res_bits, res_sign))),
-                "\\S": self(lhs == 0),
-                "\\Y": res,
-            }, params={
-                "WIDTH": res_bits
-            }, src=src(value.src_loc))
+            self.s.rtlil.cell(
+                "$mux",
+                ports={
+                    "\\A": divmod_res,
+                    "\\B": self(ast.Const(0, ast.Shape(res_bits, res_sign))),
+                    "\\S": self(lhs == 0),
+                    "\\Y": res,
+                },
+                params={"WIDTH": res_bits},
+                src=src(value.src_loc)
+            )
         return res
 
     def on_Operator_mux(self, value):
@@ -574,14 +588,17 @@ class _RHSValueCompiler(_ValueCompiler):
         val1_wire = self.match_shape(val1, val1_bits, val1_sign)
         val0_wire = self.match_shape(val0, val0_bits, val0_sign)
         res = self.s.rtlil.wire(width=res_bits, src=src(value.src_loc))
-        self.s.rtlil.cell("$mux", ports={
-            "\\A": val0_wire,
-            "\\B": val1_wire,
-            "\\S": self(sel),
-            "\\Y": res,
-        }, params={
-            "WIDTH": res_bits
-        }, src=src(value.src_loc))
+        self.s.rtlil.cell(
+            "$mux",
+            ports={
+                "\\A": val0_wire,
+                "\\B": val1_wire,
+                "\\S": self(sel),
+                "\\Y": res,
+            },
+            params={"WIDTH": res_bits},
+            src=src(value.src_loc)
+        )
         return res
 
     def on_Operator(self, value):
@@ -593,7 +610,7 @@ class _RHSValueCompiler(_ValueCompiler):
             assert value.operator == "m"
             return self.on_Operator_mux(value)
         else:
-            raise TypeError # :nocov:
+            raise TypeError  # :nocov:
 
     def _prepare_value_for_Slice(self, value):
         if isinstance(value, (ast.Signal, ast.Slice, ast.Cat)):
@@ -614,17 +631,22 @@ class _RHSValueCompiler(_ValueCompiler):
         # Note: Verilog's x[o+:w] construct produces a $shiftx cell, not a $shift cell.
         # However, nMigen's semantics defines the out-of-range bits to be zero, so it is correct
         # to use a $shift cell here instead, even though it produces less idiomatic Verilog.
-        self.s.rtlil.cell("$shift", ports={
-            "\\A": self(lhs),
-            "\\B": self(rhs),
-            "\\Y": res,
-        }, params={
-            "A_SIGNED": lhs_sign,
-            "A_WIDTH": lhs_bits,
-            "B_SIGNED": rhs_sign,
-            "B_WIDTH": rhs_bits,
-            "Y_WIDTH": res_bits,
-        }, src=src(value.src_loc))
+        self.s.rtlil.cell(
+            "$shift",
+            ports={
+                "\\A": self(lhs),
+                "\\B": self(rhs),
+                "\\Y": res,
+            },
+            params={
+                "A_SIGNED": lhs_sign,
+                "A_WIDTH": lhs_bits,
+                "B_SIGNED": rhs_sign,
+                "B_WIDTH": rhs_bits,
+                "Y_WIDTH": res_bits,
+            },
+            src=src(value.src_loc)
+        )
         return res
 
     def on_Repl(self, value):
@@ -633,16 +655,16 @@ class _RHSValueCompiler(_ValueCompiler):
 
 class _LHSValueCompiler(_ValueCompiler):
     def on_Const(self, value):
-        raise TypeError # :nocov:
+        raise TypeError  # :nocov:
 
     def on_AnyConst(self, value):
-        raise TypeError # :nocov:
+        raise TypeError  # :nocov:
 
     def on_AnySeq(self, value):
-        raise TypeError # :nocov:
+        raise TypeError  # :nocov:
 
     def on_Operator(self, value):
-        raise TypeError # :nocov:
+        raise TypeError  # :nocov:
 
     def match_shape(self, value, new_bits, new_sign):
         value_bits, value_sign = value.shape()
@@ -650,7 +672,7 @@ class _LHSValueCompiler(_ValueCompiler):
             return self(value)
         elif new_bits < value_bits:
             return self(ast.Slice(value, 0, new_bits))
-        else: # new_bits > value_bits
+        else:  # new_bits > value_bits
             dummy_bits = new_bits - value_bits
             dummy_wire = self.s.rtlil.wire(dummy_bits)
             return "{{ {} {} }}".format(dummy_wire, self(value))
@@ -669,7 +691,7 @@ class _LHSValueCompiler(_ValueCompiler):
         offset = self.s.expand(value.offset)
         if isinstance(offset, ast.Const):
             start = offset.value * value.stride
-            stop  = start + value.width
+            stop = start + value.width
             slice = self(ast.Slice(value.value, start, min(len(value.value), stop)))
             if len(value.value) >= stop:
                 return slice
@@ -681,23 +703,21 @@ class _LHSValueCompiler(_ValueCompiler):
             # is large (e.g. 32-bit wide), trying to naively legalize it is likely to exhaust
             # system resources.
             max_branches = len(value.value) // value.stride + 1
-            raise LegalizeValue(value.offset,
-                                range(1 << len(value.offset))[:max_branches],
-                                value.src_loc)
+            raise LegalizeValue(value.offset, range(1 << len(value.offset))[:max_branches], value.src_loc)
 
     def on_Repl(self, value):
-        raise TypeError # :nocov:
+        raise TypeError  # :nocov:
 
 
 class _StatementCompiler(xfrm.StatementVisitor):
     def __init__(self, state, rhs_compiler, lhs_compiler):
-        self.state        = state
+        self.state = state
         self.rhs_compiler = rhs_compiler
         self.lhs_compiler = lhs_compiler
 
-        self._case        = None
-        self._test_cache  = {}
-        self._has_rhs     = False
+        self._case = None
+        self._test_cache = {}
+        self._has_rhs = False
         self._wrap_assign = False
 
     @contextmanager
@@ -722,8 +742,7 @@ class _StatementCompiler(xfrm.StatementVisitor):
             rhs_sigspec = self.rhs_compiler(stmt.rhs)
         else:
             # In RTLIL, LHS and RHS of assignment must have exactly same width.
-            rhs_sigspec = self.rhs_compiler.match_shape(
-                stmt.rhs, lhs_bits, lhs_sign)
+            rhs_sigspec = self.rhs_compiler.match_shape(stmt.rhs, lhs_bits, lhs_sign)
         if self._wrap_assign:
             # In RTLIL, all assigns are logically sequenced before all switches, even if they are
             # interleaved in the source. In nMigen, the source ordering is used. To handle this
@@ -747,7 +766,7 @@ class _StatementCompiler(xfrm.StatementVisitor):
 
     on_Assert = on_property
     on_Assume = on_property
-    on_Cover  = on_property
+    on_Cover = on_property
 
     def on_Switch(self, stmt):
         self._check_rhs(stmt.test)
@@ -786,14 +805,13 @@ class _StatementCompiler(xfrm.StatementVisitor):
         try:
             super().on_statement(stmt)
         except LegalizeValue as legalize:
-            with self._case.switch(self.rhs_compiler(legalize.value),
-                                   src=src(legalize.src_loc)) as switch:
+            with self._case.switch(self.rhs_compiler(legalize.value), src=src(legalize.src_loc)) as switch:
                 shape = legalize.value.shape()
                 tests = ["{:0{}b}".format(v, shape.width) for v in legalize.branches]
                 if tests:
                     tests[-1] = "-" * shape.width
                 for branch, test in zip(legalize.branches, tests):
-                    with self.case(switch, (test,)):
+                    with self.case(switch, (test, )):
                         self._wrap_assign = False
                         branch_value = ast.Const(branch, shape)
                         with self.state.expand_to(legalize.value, branch_value):
@@ -816,7 +834,7 @@ def _convert_fragment(builder, fragment, name_map, hierarchy):
         else:
             return "\\{}".format(fragment.type), port_map
 
-    module_name  = hierarchy[-1] or "anonymous"
+    module_name = hierarchy[-1] or "anonymous"
     module_attrs = OrderedDict()
     if len(hierarchy) == 1:
         module_attrs["top"] = 1
@@ -824,9 +842,9 @@ def _convert_fragment(builder, fragment, name_map, hierarchy):
 
     with builder.module(module_name, attrs=module_attrs) as module:
         compiler_state = _ValueCompilerState(module)
-        rhs_compiler   = _RHSValueCompiler(compiler_state)
-        lhs_compiler   = _LHSValueCompiler(compiler_state)
-        stmt_compiler  = _StatementCompiler(compiler_state, rhs_compiler, lhs_compiler)
+        rhs_compiler = _RHSValueCompiler(compiler_state)
+        lhs_compiler = _LHSValueCompiler(compiler_state)
+        stmt_compiler = _StatementCompiler(compiler_state, rhs_compiler, lhs_compiler)
 
         verilog_trigger = None
         verilog_trigger_sync_emitted = False
@@ -867,8 +885,9 @@ def _convert_fragment(builder, fragment, name_map, hierarchy):
                     if isinstance(param_value, mem.Memory):
                         memory = param_value
                         if memory not in memories:
-                            memories[memory] = module.memory(width=memory.width, size=memory.depth,
-                                                             name=memory.name, attrs=memory.attrs)
+                            memories[memory] = module.memory(
+                                width=memory.width, size=memory.depth, name=memory.name, attrs=memory.attrs
+                            )
                             addr_bits = bits_for(memory.depth)
                             data_parts = []
                             data_mask = (1 << memory.width) - 1
@@ -878,17 +897,20 @@ def _convert_fragment(builder, fragment, name_map, hierarchy):
                                 else:
                                     data = 0
                                 data_parts.append("{:0{}b}".format(data, memory.width))
-                            module.cell("$meminit", ports={
-                                "\\ADDR": rhs_compiler(ast.Const(0, addr_bits)),
-                                "\\DATA": "{}'".format(memory.width * memory.depth) +
-                                          "".join(reversed(data_parts)),
-                            }, params={
-                                "MEMID": memories[memory],
-                                "ABITS": addr_bits,
-                                "WIDTH": memory.width,
-                                "WORDS": memory.depth,
-                                "PRIORITY": 0,
-                            })
+                            module.cell(
+                                "$meminit",
+                                ports={
+                                    "\\ADDR": rhs_compiler(ast.Const(0, addr_bits)),
+                                    "\\DATA": "{}'".format(memory.width * memory.depth) + "".join(reversed(data_parts)),
+                                },
+                                params={
+                                    "MEMID": memories[memory],
+                                    "ABITS": addr_bits,
+                                    "WIDTH": memory.width,
+                                    "WORDS": memory.depth,
+                                    "PRIORITY": 0,
+                                }
+                            )
 
                         param_value = memories[memory]
 
@@ -906,8 +928,7 @@ def _convert_fragment(builder, fragment, name_map, hierarchy):
                 if len(value) > 0:
                     sub_ports[port] = rhs_compiler(value)
 
-            module.cell(sub_type, name=sub_name, ports=sub_ports, params=sub_params,
-                        attrs=subfragment.attrs)
+            module.cell(sub_type, name=sub_name, ports=sub_ports, params=sub_params, attrs=subfragment.attrs)
 
         # If we emit all of our combinatorial logic into a single RTLIL process, Verilog
         # simulators will break horribly, because Yosys write_verilog transforms RTLIL processes
@@ -1039,7 +1060,7 @@ def _convert_fragment(builder, fragment, name_map, hierarchy):
         wire_name = compiler_state.resolve_curr(signal)
         if wire_name.startswith("\\"):
             wire_name = wire_name[1:]
-        name_map[signal] = hierarchy + (wire_name,)
+        name_map[signal] = hierarchy + (wire_name, )
 
     return module.name, port_map
 
@@ -1048,7 +1069,7 @@ def convert_fragment(fragment, name="top"):
     assert isinstance(fragment, ir.Fragment)
     builder = _Builder()
     name_map = ast.SignalDict()
-    _convert_fragment(builder, fragment, name_map, hierarchy=(name,))
+    _convert_fragment(builder, fragment, name_map, hierarchy=(name, ))
     return str(builder), name_map
 
 

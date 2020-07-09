@@ -22,8 +22,7 @@ class ConvOutput:
 
     def __str__(self):
         r = self.main_source + "\n"
-        for filename, content in sorted(self.data_files.items(),
-                                        key=itemgetter(0)):
+        for filename, content in sorted(self.data_files.items(), key=itemgetter(0)):
             r += filename + ":\n" + content
         return r
 

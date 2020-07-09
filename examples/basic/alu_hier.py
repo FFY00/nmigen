@@ -4,9 +4,9 @@ from nmigen.cli import main
 
 class Adder(Elaboratable):
     def __init__(self, width):
-        self.a   = Signal(width)
-        self.b   = Signal(width)
-        self.o   = Signal(width)
+        self.a = Signal(width)
+        self.b = Signal(width)
+        self.o = Signal(width)
 
     def elaborate(self, platform):
         m = Module()
@@ -16,9 +16,9 @@ class Adder(Elaboratable):
 
 class Subtractor(Elaboratable):
     def __init__(self, width):
-        self.a   = Signal(width)
-        self.b   = Signal(width)
-        self.o   = Signal(width)
+        self.a = Signal(width)
+        self.b = Signal(width)
+        self.o = Signal(width)
 
     def elaborate(self, platform):
         m = Module()
@@ -28,10 +28,10 @@ class Subtractor(Elaboratable):
 
 class ALU(Elaboratable):
     def __init__(self, width):
-        self.op  = Signal()
-        self.a   = Signal(width)
-        self.b   = Signal(width)
-        self.o   = Signal(width)
+        self.op = Signal()
+        self.a = Signal(width)
+        self.b = Signal(width)
+        self.o = Signal(width)
 
         self.add = Adder(width)
         self.sub = Subtractor(width)

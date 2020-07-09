@@ -1,7 +1,6 @@
 from .._toolchain.yosys import *
 from . import rtlil
 
-
 __all__ = ["YosysError", "convert", "convert_fragment"]
 
 
@@ -35,11 +34,14 @@ def _convert_rtlil_text(rtlil_text, *, strip_internal_attrs=False, write_verilog
 
     script.append("write_verilog -norename {}".format(" ".join(write_verilog_opts)))
 
-    return yosys.run(["-q", "-"], "\n".join(script),
+    return yosys.run(
+        ["-q", "-"],
+        "\n".join(script),
         # At the moment, Yosys always shows a warning indicating that not all processes can be
         # translated to Verilog. We carefully emit only the processes that *can* be translated, and
         # squash this warning. Once Yosys' write_verilog pass is fixed, we should remove this.
-        ignore_warnings=True)
+        ignore_warnings=True
+    )
 
 
 def convert_fragment(*args, strip_internal_attrs=False, **kwargs):

@@ -17,8 +17,9 @@ class LEDBlinker(Elaboratable):
             m.d.sync += timer.eq(timer + 1)
 
         return m
+
+
 # --- BUILD ---
 from nmigen_boards.icestick import *
-
 
 ICEStickPlatform().build(LEDBlinker(), do_program=True)

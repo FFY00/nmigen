@@ -16,14 +16,11 @@ class BadElaboratable(Elaboratable):
 
 class FragmentGetTestCase(FHDLTestCase):
     def test_get_wrong(self):
-        with self.assertRaises(AttributeError,
-                msg="Object None cannot be elaborated"):
+        with self.assertRaises(AttributeError, msg="Object None cannot be elaborated"):
             Fragment.get(None, platform=None)
 
-        with self.assertWarns(UserWarning,
-                msg=".elaborate() returned None; missing return statement?"):
-            with self.assertRaises(AttributeError,
-                    msg="Object None cannot be elaborated"):
+        with self.assertWarns(UserWarning, msg=".elaborate() returned None; missing return statement?"):
+            with self.assertRaises(AttributeError, msg="Object None cannot be elaborated"):
                 Fragment.get(BadElaboratable(), platform=None)
 
 
@@ -41,11 +38,9 @@ class FragmentGeneratedTestCase(FHDLTestCase):
         f2 = Fragment()
         f1.add_subfragment(f2, "f2")
 
-        with self.assertRaises(NameError,
-                msg="No subfragment at index #1"):
+        with self.assertRaises(NameError, msg="No subfragment at index #1"):
             f1.find_subfragment(1)
-        with self.assertRaises(NameError,
-                msg="No subfragment with name 'fx'"):
+        with self.assertRaises(NameError, msg="No subfragment with name 'fx'"):
             f1.find_subfragment("fx")
 
     def test_find_generated(self):
@@ -54,8 +49,7 @@ class FragmentGeneratedTestCase(FHDLTestCase):
         f2.generated["sig"] = sig = Signal()
         f1.add_subfragment(f2, "f2")
 
-        self.assertEqual(SignalKey(f1.find_generated("f2", "sig")),
-                         SignalKey(sig))
+        self.assertEqual(SignalKey(f1.find_generated("f2", "sig")), SignalKey(sig))
 
 
 class FragmentDriversTestCase(FHDLTestCase):
@@ -88,46 +82,30 @@ class FragmentPortsTestCase(FHDLTestCase):
 
     def test_self_contained(self):
         f = Fragment()
-        f.add_statements(
-            self.c1.eq(self.s1),
-            self.s1.eq(self.c1)
-        )
+        f.add_statements(self.c1.eq(self.s1), self.s1.eq(self.c1))
 
         f._propagate_ports(ports=(), all_undef_as_ports=True)
         self.assertEqual(f.ports, SignalDict([]))
 
     def test_infer_input(self):
         f = Fragment()
-        f.add_statements(
-            self.c1.eq(self.s1)
-        )
+        f.add_statements(self.c1.eq(self.s1))
 
         f._propagate_ports(ports=(), all_undef_as_ports=True)
-        self.assertEqual(f.ports, SignalDict([
-            (self.s1, "i")
-        ]))
+        self.assertEqual(f.ports, SignalDict([(self.s1, "i")]))
 
     def test_request_output(self):
         f = Fragment()
-        f.add_statements(
-            self.c1.eq(self.s1)
-        )
+        f.add_statements(self.c1.eq(self.s1))
 
-        f._propagate_ports(ports=(self.c1,), all_undef_as_ports=True)
-        self.assertEqual(f.ports, SignalDict([
-            (self.s1, "i"),
-            (self.c1, "o")
-        ]))
+        f._propagate_ports(ports=(self.c1, ), all_undef_as_ports=True)
+        self.assertEqual(f.ports, SignalDict([(self.s1, "i"), (self.c1, "o")]))
 
     def test_input_in_subfragment(self):
         f1 = Fragment()
-        f1.add_statements(
-            self.c1.eq(self.s1)
-        )
+        f1.add_statements(self.c1.eq(self.s1))
         f2 = Fragment()
-        f2.add_statements(
-            self.s1.eq(0)
-        )
+        f2.add_statements(self.s1.eq(0))
         f1.add_subfragment(f2)
         f1._propagate_ports(ports=(), all_undef_as_ports=True)
         self.assertEqual(f1.ports, SignalDict())
@@ -138,9 +116,7 @@ class FragmentPortsTestCase(FHDLTestCase):
     def test_input_only_in_subfragment(self):
         f1 = Fragment()
         f2 = Fragment()
-        f2.add_statements(
-            self.c1.eq(self.s1)
-        )
+        f2.add_statements(self.c1.eq(self.s1))
         f1.add_subfragment(f2)
         f1._propagate_ports(ports=(), all_undef_as_ports=True)
         self.assertEqual(f1.ports, SignalDict([
@@ -152,16 +128,12 @@ class FragmentPortsTestCase(FHDLTestCase):
 
     def test_output_from_subfragment(self):
         f1 = Fragment()
-        f1.add_statements(
-            self.c1.eq(0)
-        )
+        f1.add_statements(self.c1.eq(0))
         f2 = Fragment()
-        f2.add_statements(
-            self.c2.eq(1)
-        )
+        f2.add_statements(self.c2.eq(1))
         f1.add_subfragment(f2)
 
-        f1._propagate_ports(ports=(self.c2,), all_undef_as_ports=True)
+        f1._propagate_ports(ports=(self.c2, ), all_undef_as_ports=True)
         self.assertEqual(f1.ports, SignalDict([
             (self.c2, "o"),
         ]))
@@ -171,18 +143,12 @@ class FragmentPortsTestCase(FHDLTestCase):
 
     def test_output_from_subfragment_2(self):
         f1 = Fragment()
-        f1.add_statements(
-            self.c1.eq(self.s1)
-        )
+        f1.add_statements(self.c1.eq(self.s1))
         f2 = Fragment()
-        f2.add_statements(
-            self.c2.eq(self.s1)
-        )
+        f2.add_statements(self.c2.eq(self.s1))
         f1.add_subfragment(f2)
         f3 = Fragment()
-        f3.add_statements(
-            self.s1.eq(0)
-        )
+        f3.add_statements(self.s1.eq(0))
         f2.add_subfragment(f3)
 
         f1._propagate_ports(ports=(), all_undef_as_ports=True)
@@ -193,14 +159,10 @@ class FragmentPortsTestCase(FHDLTestCase):
     def test_input_output_sibling(self):
         f1 = Fragment()
         f2 = Fragment()
-        f2.add_statements(
-            self.c1.eq(self.c2)
-        )
+        f2.add_statements(self.c1.eq(self.c2))
         f1.add_subfragment(f2)
         f3 = Fragment()
-        f3.add_statements(
-            self.c2.eq(0)
-        )
+        f3.add_statements(self.c2.eq(0))
         f3.add_driver(self.c2)
         f1.add_subfragment(f3)
 
@@ -210,15 +172,11 @@ class FragmentPortsTestCase(FHDLTestCase):
     def test_output_input_sibling(self):
         f1 = Fragment()
         f2 = Fragment()
-        f2.add_statements(
-            self.c2.eq(0)
-        )
+        f2.add_statements(self.c2.eq(0))
         f2.add_driver(self.c2)
         f1.add_subfragment(f2)
         f3 = Fragment()
-        f3.add_statements(
-            self.c1.eq(self.c2)
-        )
+        f3.add_statements(self.c1.eq(self.c2))
         f1.add_subfragment(f3)
 
         f1._propagate_ports(ports=(), all_undef_as_ports=True)
@@ -227,15 +185,13 @@ class FragmentPortsTestCase(FHDLTestCase):
     def test_input_cd(self):
         sync = ClockDomain()
         f = Fragment()
-        f.add_statements(
-            self.c1.eq(self.s1)
-        )
+        f.add_statements(self.c1.eq(self.s1))
         f.add_domains(sync)
         f.add_driver(self.c1, "sync")
 
         f._propagate_ports(ports=(), all_undef_as_ports=True)
         self.assertEqual(f.ports, SignalDict([
-            (self.s1,  "i"),
+            (self.s1, "i"),
             (sync.clk, "i"),
             (sync.rst, "i"),
         ]))
@@ -243,15 +199,13 @@ class FragmentPortsTestCase(FHDLTestCase):
     def test_input_cd_reset_less(self):
         sync = ClockDomain(reset_less=True)
         f = Fragment()
-        f.add_statements(
-            self.c1.eq(self.s1)
-        )
+        f.add_statements(self.c1.eq(self.s1))
         f.add_domains(sync)
         f.add_driver(self.c1, "sync")
 
         f._propagate_ports(ports=(), all_undef_as_ports=True)
         self.assertEqual(f.ports, SignalDict([
-            (self.s1,  "i"),
+            (self.s1, "i"),
             (sync.clk, "i"),
         ]))
 
@@ -262,9 +216,7 @@ class FragmentPortsTestCase(FHDLTestCase):
         f1.add_subfragment(f2)
 
         f1._propagate_ports(ports=(), all_undef_as_ports=True)
-        self.assertEqual(f1.ports, SignalDict([
-            (s, "io")
-        ]))
+        self.assertEqual(f1.ports, SignalDict([(s, "io")]))
 
     def test_in_out_same_signal(self):
         s = Signal()
@@ -274,18 +226,14 @@ class FragmentPortsTestCase(FHDLTestCase):
         f2.add_subfragment(f1)
 
         f2._propagate_ports(ports=(), all_undef_as_ports=True)
-        self.assertEqual(f1.ports, SignalDict([
-            (s, "o")
-        ]))
+        self.assertEqual(f1.ports, SignalDict([(s, "o")]))
 
         f3 = Instance("foo", o_y=s, i_x=s)
         f4 = Fragment()
         f4.add_subfragment(f3)
 
         f4._propagate_ports(ports=(), all_undef_as_ports=True)
-        self.assertEqual(f3.ports, SignalDict([
-            (s, "o")
-        ]))
+        self.assertEqual(f3.ports, SignalDict([(s, "o")]))
 
     def test_clk_rst(self):
         sync = ClockDomain()
@@ -300,19 +248,20 @@ class FragmentPortsTestCase(FHDLTestCase):
 
     def test_port_wrong(self):
         f = Fragment()
-        with self.assertRaises(TypeError,
-                msg="Only signals may be added as ports, not (const 1'd1)"):
-            f.prepare(ports=(Const(1),))
+        with self.assertRaises(TypeError, msg="Only signals may be added as ports, not (const 1'd1)"):
+            f.prepare(ports=(Const(1), ))
 
     def test_port_not_iterable(self):
         f = Fragment()
-        with self.assertRaises(TypeError,
-                msg="`ports` must be either a list or a tuple, not 1"):
+        with self.assertRaises(TypeError, msg="`ports` must be either a list or a tuple, not 1"):
             f.prepare(ports=1)
-        with self.assertRaises(TypeError,
-                msg="`ports` must be either a list or a tuple, not (const 1'd1)" +
-                " (did you mean `ports=(<signal>,)`, rather than `ports=<signal>`?)"):
+        with self.assertRaises(
+            TypeError,
+            msg="`ports` must be either a list or a tuple, not (const 1'd1)" +
+            " (did you mean `ports=(<signal>,)`, rather than `ports=<signal>`?)"
+        ):
             f.prepare(ports=Const(1))
+
 
 class FragmentDomainsTestCase(FHDLTestCase):
     def test_iter_signals(self):
@@ -380,10 +329,12 @@ class FragmentDomainsTestCase(FHDLTestCase):
         f.add_subfragment(fa, "a")
         f.add_subfragment(fb)
 
-        with self.assertRaises(DomainError,
-                msg="Domain 'sync' is defined by subfragments 'a', <unnamed #1> of fragment "
-                    "'top'; it is necessary to either rename subfragment domains explicitly, "
-                    "or give names to subfragments"):
+        with self.assertRaises(
+            DomainError,
+            msg="Domain 'sync' is defined by subfragments 'a', <unnamed #1> of fragment "
+            "'top'; it is necessary to either rename subfragment domains explicitly, "
+            "or give names to subfragments"
+        ):
             f._propagate_domains_up()
 
     def test_domain_conflict_name(self):
@@ -398,10 +349,12 @@ class FragmentDomainsTestCase(FHDLTestCase):
         f.add_subfragment(fa, "x")
         f.add_subfragment(fb, "x")
 
-        with self.assertRaises(DomainError,
-                msg="Domain 'sync' is defined by subfragments #0, #1 of fragment 'top', some "
-                    "of which have identical names; it is necessary to either rename subfragment "
-                    "domains explicitly, or give distinct names to subfragments"):
+        with self.assertRaises(
+            DomainError,
+            msg="Domain 'sync' is defined by subfragments #0, #1 of fragment 'top', some "
+            "of which have identical names; it is necessary to either rename subfragment "
+            "domains explicitly, or give distinct names to subfragments"
+        ):
             f._propagate_domains_up()
 
     def test_domain_conflict_rename_drivers(self):
@@ -419,9 +372,7 @@ class FragmentDomainsTestCase(FHDLTestCase):
 
         f._propagate_domains_up()
         fb_new, _ = f.subfragments[1]
-        self.assertEqual(fb_new.drivers, OrderedDict({
-            None: SignalSet((ResetSignal("b_sync"),))
-        }))
+        self.assertEqual(fb_new.drivers, OrderedDict({None: SignalSet((ResetSignal("b_sync"), ))}))
 
     def test_domain_conflict_rename_drivers(self):
         cda = ClockDomain("sync")
@@ -481,8 +432,7 @@ class FragmentDomainsTestCase(FHDLTestCase):
         f1 = Fragment()
         f1.add_driver(s1, "sync")
 
-        with self.assertRaises(DomainError,
-                msg="Domain 'sync' is used but not defined"):
+        with self.assertRaises(DomainError, msg="Domain 'sync' is used but not defined"):
             f1._propagate_domains(missing_domain=lambda name: None)
 
     def test_propagate_create_missing(self):
@@ -511,16 +461,14 @@ class FragmentDomainsTestCase(FHDLTestCase):
         self.assertEqual(f1.domains.keys(), {"sync"})
         self.assertEqual(f1.domains["sync"], f2.domains["sync"])
         self.assertEqual(new_domains, [])
-        self.assertEqual(f1.subfragments, [
-            (f2, "cd_sync")
-        ])
+        self.assertEqual(f1.subfragments, [(f2, "cd_sync")])
 
     def test_propagate_create_missing_fragment_many_domains(self):
         s1 = Signal()
         f1 = Fragment()
         f1.add_driver(s1, "sync")
 
-        cd_por  = ClockDomain("por")
+        cd_por = ClockDomain("por")
         cd_sync = ClockDomain("sync")
         f2 = Fragment()
         f2.add_domains(cd_por, cd_sync)
@@ -530,9 +478,7 @@ class FragmentDomainsTestCase(FHDLTestCase):
         self.assertEqual(f2.domains.keys(), {"sync", "por"})
         self.assertEqual(f1.domains["sync"], f2.domains["sync"])
         self.assertEqual(new_domains, [])
-        self.assertEqual(f1.subfragments, [
-            (f2, "cd_sync")
-        ])
+        self.assertEqual(f1.subfragments, [(f2, "cd_sync")])
 
     def test_propagate_create_missing_fragment_wrong(self):
         s1 = Signal()
@@ -542,9 +488,11 @@ class FragmentDomainsTestCase(FHDLTestCase):
         f2 = Fragment()
         f2.add_domains(ClockDomain("foo"))
 
-        with self.assertRaises(DomainError,
-                msg="Fragment returned by missing domain callback does not define requested "
-                    "domain 'sync' (defines 'foo')."):
+        with self.assertRaises(
+            DomainError,
+            msg="Fragment returned by missing domain callback does not define requested "
+            "domain 'sync' (defines 'foo')."
+        ):
             f1._propagate_domains(missing_domain=lambda name: f2)
 
 
@@ -583,30 +531,35 @@ class FragmentHierarchyConflictTestCase(FHDLTestCase):
             (self.f1b, "f1b"),
             (self.f2a, "f2a"),
         ])
-        self.assertRepr(self.f1.statements, """
+        self.assertRepr(
+            self.f1.statements, """
         (
             (eq (sig c1) (const 1'd0))
             (eq (sig c2) (const 1'd1))
         )
-        """)
+        """
+        )
         self.assertEqual(self.f1.drivers, {
-            None:   SignalSet((self.s1,)),
+            None: SignalSet((self.s1, )),
             "sync": SignalSet((self.c1, self.c2)),
         })
 
     def test_conflict_self_sub_error(self):
         self.setUp_self_sub()
 
-        with self.assertRaises(DriverConflict,
-                msg="Signal '(sig s1)' is driven from multiple fragments: top, top.<unnamed #1>"):
+        with self.assertRaises(
+            DriverConflict, msg="Signal '(sig s1)' is driven from multiple fragments: top, top.<unnamed #1>"
+        ):
             self.f1._resolve_hierarchy_conflicts(mode="error")
 
     def test_conflict_self_sub_warning(self):
         self.setUp_self_sub()
 
-        with self.assertWarns(DriverConflict,
-                msg="Signal '(sig s1)' is driven from multiple fragments: top, top.<unnamed #1>; "
-                    "hierarchy will be flattened"):
+        with self.assertWarns(
+            DriverConflict,
+            msg="Signal '(sig s1)' is driven from multiple fragments: top, top.<unnamed #1>; "
+            "hierarchy will be flattened"
+        ):
             self.f1._resolve_hierarchy_conflicts(mode="warn")
 
     def setUp_sub_sub(self):
@@ -631,12 +584,14 @@ class FragmentHierarchyConflictTestCase(FHDLTestCase):
 
         self.f1._resolve_hierarchy_conflicts(mode="silent")
         self.assertEqual(self.f1.subfragments, [])
-        self.assertRepr(self.f1.statements, """
+        self.assertRepr(
+            self.f1.statements, """
         (
             (eq (sig c1) (const 1'd0))
             (eq (sig c2) (const 1'd1))
         )
-        """)
+        """
+        )
 
     def setUp_self_subsub(self):
         self.s1 = Signal()
@@ -660,12 +615,14 @@ class FragmentHierarchyConflictTestCase(FHDLTestCase):
 
         self.f1._resolve_hierarchy_conflicts(mode="silent")
         self.assertEqual(self.f1.subfragments, [])
-        self.assertRepr(self.f1.statements, """
+        self.assertRepr(
+            self.f1.statements, """
         (
             (eq (sig c1) (const 1'd0))
             (eq (sig c2) (const 1'd1))
         )
-        """)
+        """
+        )
 
     def setUp_memory(self):
         self.m = Memory(width=8, depth=4)
@@ -691,17 +648,20 @@ class FragmentHierarchyConflictTestCase(FHDLTestCase):
     def test_conflict_memory_error(self):
         self.setUp_memory()
 
-        with self.assertRaises(DriverConflict,
-                msg="Memory 'm' is accessed from multiple fragments: top.<unnamed #0>, "
-                    "top.<unnamed #1>"):
+        with self.assertRaises(
+            DriverConflict, msg="Memory 'm' is accessed from multiple fragments: top.<unnamed #0>, "
+            "top.<unnamed #1>"
+        ):
             self.f1._resolve_hierarchy_conflicts(mode="error")
 
     def test_conflict_memory_warning(self):
         self.setUp_memory()
 
-        with self.assertWarns(DriverConflict,
-                msg="Memory 'm' is accessed from multiple fragments: top.<unnamed #0>, "
-                    "top.<unnamed #1>; hierarchy will be flattened"):
+        with self.assertWarns(
+            DriverConflict,
+            msg="Memory 'm' is accessed from multiple fragments: top.<unnamed #0>, "
+            "top.<unnamed #1>; hierarchy will be flattened"
+        ):
             self.f1._resolve_hierarchy_conflicts(mode="warn")
 
     def test_explicit_flatten(self):
@@ -736,7 +696,8 @@ class InstanceTestCase(FHDLTestCase):
         s4 = Signal()
         s5 = Signal()
         s6 = Signal()
-        inst = Instance("foo",
+        inst = Instance(
+            "foo",
             ("a", "ATTR1", 1),
             ("p", "PARAM1", 0x1234),
             ("i", "s1", s1),
@@ -756,17 +717,21 @@ class InstanceTestCase(FHDLTestCase):
             ("PARAM1", 0x1234),
             ("PARAM2", 0x5678),
         ]))
-        self.assertEqual(inst.named_ports, OrderedDict([
-            ("s1", (s1, "i")),
-            ("s2", (s2, "o")),
-            ("s3", (s3, "io")),
-            ("s4", (s4, "i")),
-            ("s5", (s5, "o")),
-            ("s6", (s6, "io")),
-        ]))
+        self.assertEqual(
+            inst.named_ports,
+            OrderedDict([
+                ("s1", (s1, "i")),
+                ("s2", (s2, "o")),
+                ("s3", (s3, "io")),
+                ("s4", (s4, "i")),
+                ("s5", (s5, "o")),
+                ("s6", (s6, "io")),
+            ])
+        )
 
     def test_cast_ports(self):
-        inst = Instance("foo",
+        inst = Instance(
+            "foo",
             ("i", "s1", 1),
             ("o", "s2", 2),
             ("io", "s3", 3),
@@ -783,16 +748,20 @@ class InstanceTestCase(FHDLTestCase):
 
     def test_wrong_construct_arg(self):
         s = Signal()
-        with self.assertRaises(NameError,
-                msg="Instance argument ('', 's1', (sig s)) should be a tuple "
-                    "(kind, name, value) where kind is one of \"p\", \"i\", \"o\", or \"io\""):
+        with self.assertRaises(
+            NameError,
+            msg="Instance argument ('', 's1', (sig s)) should be a tuple "
+            "(kind, name, value) where kind is one of \"p\", \"i\", \"o\", or \"io\""
+        ):
             Instance("foo", ("", "s1", s))
 
     def test_wrong_construct_kwarg(self):
         s = Signal()
-        with self.assertRaises(NameError,
-                msg="Instance keyword argument x_s1=(sig s) does not start with one of "
-                    "\"p_\", \"i_\", \"o_\", or \"io_\""):
+        with self.assertRaises(
+            NameError,
+            msg="Instance keyword argument x_s1=(sig s) does not start with one of "
+            "\"p_\", \"i_\", \"o_\", or \"io_\""
+        ):
             Instance("foo", x_s1=s)
 
     def setUp_cpu(self):
@@ -801,7 +770,8 @@ class InstanceTestCase(FHDLTestCase):
         self.pins = Signal(8)
         self.datal = Signal(4)
         self.datah = Signal(4)
-        self.inst = Instance("cpu",
+        self.inst = Instance(
+            "cpu",
             p_RESET=0x1234,
             i_clk=ClockSignal(),
             i_rst=self.rst,
@@ -835,13 +805,15 @@ class InstanceTestCase(FHDLTestCase):
         f = self.wrap.prepare(ports=[self.rst, self.stb])
         sync_clk = f.domains["sync"].clk
         sync_rst = f.domains["sync"].rst
-        self.assertEqual(f.ports, SignalDict([
-            (sync_clk, "i"),
-            (sync_rst, "i"),
-            (self.rst, "i"),
-            (self.stb, "o"),
-            (self.pins, "io"),
-        ]))
+        self.assertEqual(
+            f.ports, SignalDict([
+                (sync_clk, "i"),
+                (sync_rst, "i"),
+                (self.rst, "i"),
+                (self.stb, "o"),
+                (self.pins, "io"),
+            ])
+        )
 
     def test_prepare_slice_in_port(self):
         s = Signal(2)

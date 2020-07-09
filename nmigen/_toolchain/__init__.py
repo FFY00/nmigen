@@ -1,7 +1,6 @@
 import os
 import shutil
 
-
 __all__ = ["ToolNotFound", "tool_env_var", "has_tool", "require_tool"]
 
 
@@ -26,12 +25,14 @@ def require_tool(name):
     path = _get_tool(name)
     if shutil.which(path) is None:
         if env_var in os.environ:
-            raise ToolNotFound("Could not find required tool {} in {} as "
-                               "specified via the {} environment variable".
-                               format(name, path, env_var))
+            raise ToolNotFound(
+                "Could not find required tool {} in {} as "
+                "specified via the {} environment variable".format(name, path, env_var)
+            )
         else:
-            raise ToolNotFound("Could not find required tool {} in PATH. Place "
-                               "it directly in PATH or specify path explicitly "
-                               "via the {} environment variable".
-                               format(name, env_var))
+            raise ToolNotFound(
+                "Could not find required tool {} in PATH. Place "
+                "it directly in PATH or specify path explicitly "
+                "via the {} environment variable".format(name, env_var)
+            )
     return path

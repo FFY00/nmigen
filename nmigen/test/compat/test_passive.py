@@ -8,6 +8,7 @@ class PassiveCase(unittest.TestCase):
         n = 5
 
         count = 0
+
         @passive
         def counter():
             nonlocal count

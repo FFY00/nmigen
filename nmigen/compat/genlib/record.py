@@ -4,7 +4,6 @@ from ..fhdl.structure import *
 from functools import reduce
 from operator import or_
 
-
 (DIR_NONE, DIR_S_TO_M, DIR_M_TO_S) = range(3)
 
 # Possible layout elements:
@@ -99,7 +98,7 @@ class Record:
             prefix = ""
         for f in self.layout:
             if isinstance(f[1], (int, tuple)):  # cases 1/2
-                if(len(f) == 3):
+                if (len(f) == 3):
                     fname, fsize, fdirection = f
                 else:
                     fname, fsize = f
@@ -112,8 +111,7 @@ class Record:
             setattr(self, fname, finst)
 
     def eq(self, other):
-        return [getattr(self, f[0]).eq(getattr(other, f[0]))
-          for f in self.layout if hasattr(other, f[0])]
+        return [getattr(self, f[0]).eq(getattr(other, f[0])) for f in self.layout if hasattr(other, f[0])]
 
     def iter_flat(self):
         for f in self.layout:
@@ -175,13 +173,13 @@ class Record:
             if m_direction == DIR_M_TO_S:
                 for iter_slave in iter_slaves:
                     s_signal, s_direction = next(iter_slave)
-                    assert(s_direction == DIR_M_TO_S)
+                    assert (s_direction == DIR_M_TO_S)
                     r.append(s_signal.eq(m_signal))
             elif m_direction == DIR_S_TO_M:
                 s_signals = []
                 for iter_slave in iter_slaves:
                     s_signal, s_direction = next(iter_slave)
-                    assert(s_direction == DIR_S_TO_M)
+                    assert (s_direction == DIR_S_TO_M)
                     s_signals.append(s_signal)
                 r.append(m_signal.eq(reduce(or_, s_signals)))
             else:

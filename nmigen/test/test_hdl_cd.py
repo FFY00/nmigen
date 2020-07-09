@@ -17,8 +17,7 @@ class ClockDomainTestCase(FHDLTestCase):
         self.assertEqual(pix.name, "pix")
         dom = [ClockDomain("foo")][0]
         self.assertEqual(dom.name, "foo")
-        with self.assertRaises(ValueError,
-                msg="Clock domain name must be specified explicitly"):
+        with self.assertRaises(ValueError, msg="Clock domain name must be specified explicitly"):
             ClockDomain()
         cd_reset = ClockDomain(local=True)
         self.assertEqual(cd_reset.local, True)
@@ -32,8 +31,7 @@ class ClockDomainTestCase(FHDLTestCase):
         self.assertEqual(sync.clk_edge, "neg")
 
     def test_edge_wrong(self):
-        with self.assertRaises(ValueError,
-                msg="Domain clock edge must be one of 'pos' or 'neg', not 'xxx'"):
+        with self.assertRaises(ValueError, msg="Domain clock edge must be one of 'pos' or 'neg', not 'xxx'"):
             ClockDomain("sync", clk_edge="xxx")
 
     def test_with_reset(self):
@@ -73,6 +71,5 @@ class ClockDomainTestCase(FHDLTestCase):
         self.assertEqual(sync.clk.name, "pix_clk")
 
     def test_wrong_name_comb(self):
-        with self.assertRaises(ValueError,
-                msg="Domain 'comb' may not be clocked"):
+        with self.assertRaises(ValueError, msg="Domain 'comb' may not be clocked"):
             comb = ClockDomain()

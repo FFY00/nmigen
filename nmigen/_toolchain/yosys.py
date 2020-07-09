@@ -5,26 +5,25 @@ import subprocess
 import warnings
 import pathlib
 try:
-    from importlib import metadata as importlib_metadata # py3.8+ stdlib
+    from importlib import metadata as importlib_metadata  # py3.8+ stdlib
 except ImportError:
     try:
-        import importlib_metadata # py3.7- shim
+        import importlib_metadata  # py3.7- shim
     except ImportError:
-        importlib_metadata = None # not installed
+        importlib_metadata = None  # not installed
 try:
     try:
         from importlib import resources as importlib_resources
         try:
-            importlib_resources.files # py3.9+ stdlib
+            importlib_resources.files  # py3.9+ stdlib
         except AttributeError:
-            import importlib_resources # py3.8- shim
+            import importlib_resources  # py3.8- shim
     except ImportError:
-        import importlib_resources # py3.6- shim
+        import importlib_resources  # py3.6- shim
 except ImportError:
     importlib_resources = None
 
 from . import has_tool, require_tool
-
 
 __all__ = ["YosysError", "YosysBinary", "find_yosys"]
 
@@ -139,8 +138,10 @@ class _BuiltinYosys(YosysBinary):
     @classmethod
     def run(cls, args, stdin="", *, ignore_warnings=False, src_loc_at=0):
         popen = subprocess.Popen([sys.executable, "-m", cls.YOSYS_PACKAGE, *args],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            encoding="utf-8")
+                                 stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 encoding="utf-8")
         stdout, stderr = popen.communicate(stdin)
         return cls._process_result(popen.returncode, stdout, stderr, ignore_warnings, src_loc_at)
 
@@ -164,8 +165,9 @@ class _SystemYosys(YosysBinary):
     @classmethod
     def data_dir(cls):
         popen = subprocess.Popen([require_tool(cls.YOSYS_BINARY) + "-config", "--datdir"],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            encoding="utf-8")
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 encoding="utf-8")
         stdout, stderr = popen.communicate()
         if popen.returncode:
             raise YosysError(stderr.strip())
@@ -174,8 +176,10 @@ class _SystemYosys(YosysBinary):
     @classmethod
     def run(cls, args, stdin="", *, ignore_warnings=False, src_loc_at=0):
         popen = subprocess.Popen([require_tool(cls.YOSYS_BINARY), *args],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            encoding="utf-8")
+                                 stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 encoding="utf-8")
         stdout, stderr = popen.communicate(stdin)
         # If Yosys is built with an evaluation version of Verific, then Verific license
         # information is printed first. It consists of empty lines and lines starting with `--`,
@@ -212,9 +216,10 @@ def find_yosys(requirement):
         elif clause == "system":
             proxies.append(_SystemYosys)
         else:
-            raise YosysError("The NMIGEN_USE_YOSYS environment variable contains "
-                             "an unrecognized clause {!r}"
-                             .format(clause))
+            raise YosysError(
+                "The NMIGEN_USE_YOSYS environment variable contains "
+                "an unrecognized clause {!r}".format(clause)
+            )
     for proxy in proxies:
         if proxy.available():
             version = proxy.version()
@@ -222,8 +227,9 @@ def find_yosys(requirement):
                 return proxy
     else:
         if "NMIGEN_USE_YOSYS" in os.environ:
-            raise YosysError("Could not find an acceptable Yosys binary. Searched: {}"
-                             .format(", ".join(clauses)))
+            raise YosysError("Could not find an acceptable Yosys binary. Searched: {}".format(", ".join(clauses)))
         else:
-            raise YosysError("Could not find an acceptable Yosys binary. The `nmigen-yosys` PyPI "
-                             "package, if available for this platform, can be used as fallback")
+            raise YosysError(
+                "Could not find an acceptable Yosys binary. The `nmigen-yosys` PyPI "
+                "package, if available for this platform, can be used as fallback"
+            )

@@ -7,7 +7,6 @@ from ...hdl.ast import Signal as NativeSignal
 from ..fhdl.module import CompatModule, CompatFinalizeError
 from ..fhdl.structure import Signal, If, Case
 
-
 __all__ = ["AnonymousState", "NextState", "NextValue", "FSM"]
 
 
@@ -39,19 +38,13 @@ def _target_eq(a, b):
     elif ty == Cat:
         return all(_target_eq(x, y) for x, y in zip(a.l, b.l))
     elif ty == Slice:
-        return (_target_eq(a.value, b.value)
-                    and a.start == b.start
-                    and a.stop == b.stop)
+        return (_target_eq(a.value, b.value) and a.start == b.start and a.stop == b.stop)
     elif ty == Part:
-        return (_target_eq(a.value, b.value)
-                    and _target_eq(a.offset == b.offset)
-                    and a.width == b.width)
+        return (_target_eq(a.value, b.value) and _target_eq(a.offset == b.offset) and a.width == b.width)
     elif ty == ArrayProxy:
-        return (all(_target_eq(x, y) for x, y in zip(a.choices, b.choices))
-                    and _target_eq(a.key, b.key))
+        return (all(_target_eq(x, y) for x, y in zip(a.choices, b.choices)) and _target_eq(a.key, b.key))
     else:
-        raise ValueError("NextValue cannot be used with target type '{}'"
-                         .format(ty))
+        raise ValueError("NextValue cannot be used with target type '{}'".format(ty))
 
 
 class _LowerNext(ValueTransformer, StatementTransformer):
@@ -80,18 +73,18 @@ class _LowerNext(ValueTransformer, StatementTransformer):
                 next_value_ce, next_value = self._get_register_control(node.target)
             except KeyError:
                 related = node.target if isinstance(node.target, Signal) else None
-                next_value = Signal(node.target.shape(),
-                    name=None if related is None else "{}_fsm_next".format(related.name))
-                next_value_ce = Signal(
-                    name=None if related is None else "{}_fsm_next_ce".format(related.name))
+                next_value = Signal(node.target.shape(), name=None if related is None else "{}_fsm_next".format(related.name))
+                next_value_ce = Signal(name=None if related is None else "{}_fsm_next_ce".format(related.name))
                 self.registers.append((node.target, next_value_ce, next_value))
             return next_value.eq(node.value), next_value_ce.eq(1)
         else:
             return node
 
 
-@deprecated("instead of `migen.genlib.fsm.FSM()`, use `with m.FSM():`; note that there is no "
-            "replacement for `{before,after}_{entering,leaving}` and `delayed_enter` methods")
+@deprecated(
+    "instead of `migen.genlib.fsm.FSM()`, use `with m.FSM():`; note that there is no "
+    "replacement for `{before,after}_{entering,leaving}` and `delayed_enter` methods"
+)
 class FSM(CompatModule):
     def __init__(self, reset_state=None):
         self.actions = OrderedDict()
@@ -184,10 +177,7 @@ class FSM(CompatModule):
 
     def _finalize_sync(self, ls):
         cases = dict((self.encoding[k], ls.on_statement(v)) for k, v in self.actions.items() if v)
-        self.comb += [
-            self.next_state.eq(self.state),
-            Case(self.state, cases).makedefault(self.encoding[self.reset_state])
-        ]
+        self.comb += [self.next_state.eq(self.state), Case(self.state, cases).makedefault(self.encoding[self.reset_state])]
         self.sync += self.state.eq(self.next_state)
         for register, next_value_ce, next_value in ls.registers:
             self.sync += If(next_value_ce, register.eq(next_value))

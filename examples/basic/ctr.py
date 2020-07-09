@@ -4,7 +4,7 @@ from nmigen.cli import main, pysim
 
 class Counter(Elaboratable):
     def __init__(self, width):
-        self.v = Signal(width, reset=2**width-1)
+        self.v = Signal(width, reset=2**width - 1)
         self.o = Signal()
 
     def elaborate(self, platform):

@@ -12,7 +12,6 @@ from .ir import *
 from .cd import *
 from .xfrm import *
 
-
 __all__ = ["SyntaxError", "SyntaxWarning", "Module"]
 
 
@@ -43,10 +42,12 @@ class _ModuleBuilderDomain(_ModuleBuilderProxy):
 class _ModuleBuilderDomains(_ModuleBuilderProxy):
     def __getattr__(self, name):
         if name == "submodules":
-            warnings.warn("Using '<module>.d.{}' would add statements to clock domain {!r}; "
-                          "did you mean <module>.{} instead?"
-                          .format(name, name, name),
-                          SyntaxWarning, stacklevel=2)
+            warnings.warn(
+                "Using '<module>.d.{}' would add statements to clock domain {!r}; "
+                "did you mean <module>.{} instead?".format(name, name, name),
+                SyntaxWarning,
+                stacklevel=2
+            )
         if name == "comb":
             domain = None
         else:
@@ -60,8 +61,7 @@ class _ModuleBuilderDomains(_ModuleBuilderProxy):
         if name == "_depth":
             object.__setattr__(self, name, value)
         elif not isinstance(value, _ModuleBuilderDomain):
-            raise AttributeError("Cannot assign 'd.{}' attribute; did you mean 'd.{} +='?"
-                                 .format(name, name))
+            raise AttributeError("Cannot assign 'd.{}' attribute; did you mean 'd.{} +='?".format(name, name))
 
     def __setitem__(self, name, value):
         return self.__setattr__(name, value)
@@ -74,10 +74,10 @@ class _ModuleBuilderRoot:
 
     def __getattr__(self, name):
         if name in ("comb", "sync"):
-            raise AttributeError("'{}' object has no attribute '{}'; did you mean 'd.{}'?"
-                                 .format(type(self).__name__, name, name))
-        raise AttributeError("'{}' object has no attribute '{}'"
-                             .format(type(self).__name__, name))
+            raise AttributeError(
+                "'{}' object has no attribute '{}'; did you mean 'd.{}'?".format(type(self).__name__, name, name)
+            )
+        raise AttributeError("'{}' object has no attribute '{}'".format(type(self).__name__, name))
 
 
 class _ModuleBuilderSubmodules:
@@ -109,19 +109,18 @@ class _ModuleBuilderDomainSet:
     def __iadd__(self, domains):
         for domain in flatten([domains]):
             if not isinstance(domain, ClockDomain):
-                raise TypeError("Only clock domains may be added to `m.domains`, not {!r}"
-                                .format(domain))
+                raise TypeError("Only clock domains may be added to `m.domains`, not {!r}".format(domain))
             self._builder._add_domain(domain)
         return self
 
     def __setattr__(self, name, domain):
         if not isinstance(domain, ClockDomain):
-            raise TypeError("Only clock domains may be added to `m.domains`, not {!r}"
-                            .format(domain))
+            raise TypeError("Only clock domains may be added to `m.domains`, not {!r}".format(domain))
         if domain.name != name:
-            raise NameError("Clock domain name {!r} must match name in `m.domains.{} += ...` "
-                            "syntax"
-                            .format(domain.name, name))
+            raise NameError(
+                "Clock domain name {!r} must match name in `m.domains.{} += ...` "
+                "syntax".format(domain.name, name)
+            )
         self._builder._add_domain(domain)
 
 
@@ -133,8 +132,7 @@ class _GuardedContextManager(_GeneratorContextManager):
         return super().__init__(func, args, kwds)
 
     def __bool__(self):
-        raise SyntaxError("`if m.{kw}(...):` does not work; use `with m.{kw}(...)`"
-                          .format(kw=self.keyword))
+        raise SyntaxError("`if m.{kw}(...):` does not work; use `with m.{kw}(...)`".format(kw=self.keyword))
 
 
 def _guardedcontextmanager(keyword):
@@ -142,13 +140,15 @@ def _guardedcontextmanager(keyword):
         @wraps(func)
         def helper(*args, **kwds):
             return _GuardedContextManager(keyword, func, args, kwds)
+
         return helper
+
     return decorator
 
 
 class FSM:
     def __init__(self, state, encoding, decoding):
-        self.state    = state
+        self.state = state
         self.encoding = encoding
         self.decoding = decoding
 
@@ -161,38 +161,39 @@ class FSM:
 class Module(_ModuleBuilderRoot, Elaboratable):
     @classmethod
     def __init_subclass__(cls):
-        raise SyntaxError("Instead of inheriting from `Module`, inherit from `Elaboratable` "
-                          "and return a `Module` from the `elaborate(self, platform)` method")
+        raise SyntaxError(
+            "Instead of inheriting from `Module`, inherit from `Elaboratable` "
+            "and return a `Module` from the `elaborate(self, platform)` method"
+        )
 
     def __init__(self):
         _ModuleBuilderRoot.__init__(self, self, depth=0)
-        self.submodules    = _ModuleBuilderSubmodules(self)
-        self.domains       = _ModuleBuilderDomainSet(self)
+        self.submodules = _ModuleBuilderSubmodules(self)
+        self.domains = _ModuleBuilderDomainSet(self)
 
-        self._statements   = Statement.cast([])
+        self._statements = Statement.cast([])
         self._ctrl_context = None
-        self._ctrl_stack   = []
+        self._ctrl_stack = []
 
-        self._driving      = SignalDict()
+        self._driving = SignalDict()
         self._named_submodules = {}
-        self._anon_submodules  = []
-        self._domains      = {}
-        self._generated    = {}
+        self._anon_submodules = []
+        self._domains = {}
+        self._generated = {}
 
     def _check_context(self, construct, context):
         if self._ctrl_context != context:
             if self._ctrl_context is None:
-                raise SyntaxError("{} is not permitted outside of {}"
-                                  .format(construct, context))
+                raise SyntaxError("{} is not permitted outside of {}".format(construct, context))
             else:
                 if self._ctrl_context == "Switch":
                     secondary_context = "Case"
                 if self._ctrl_context == "FSM":
                     secondary_context = "State"
-                raise SyntaxError("{} is not permitted directly inside of {}; it is permitted "
-                                  "inside of {} {}"
-                                  .format(construct, self._ctrl_context,
-                                          self._ctrl_context, secondary_context))
+                raise SyntaxError(
+                    "{} is not permitted directly inside of {}; it is permitted "
+                    "inside of {} {}".format(construct, self._ctrl_context, self._ctrl_context, secondary_context)
+                )
 
     def _get_ctrl(self, name):
         if self._ctrl_stack:
@@ -213,11 +214,14 @@ class Module(_ModuleBuilderRoot, Elaboratable):
         cond = Value.cast(cond)
         width, signed = cond.shape()
         if signed:
-            warnings.warn("Signed values in If/Elif conditions usually result from inverting "
-                          "Python booleans with ~, which leads to unexpected results. "
-                          "Replace `~flag` with `not flag`. (If this is a false positive, "
-                          "silence this warning with `m.If(x)` → `m.If(x.bool())`.)",
-                          SyntaxWarning, stacklevel=4)
+            warnings.warn(
+                "Signed values in If/Elif conditions usually result from inverting "
+                "Python booleans with ~, which leads to unexpected results. "
+                "Replace `~flag` with `not flag`. (If this is a false positive, "
+                "silence this warning with `m.If(x)` → `m.If(x.bool())`.)",
+                SyntaxWarning,
+                stacklevel=4
+            )
         return cond
 
     @_guardedcontextmanager("If")
@@ -226,9 +230,9 @@ class Module(_ModuleBuilderRoot, Elaboratable):
         cond = self._check_signed_cond(cond)
         src_loc = tracer.get_src_loc(src_loc_at=1)
         if_data = self._set_ctrl("If", {
-            "tests":    [],
-            "bodies":   [],
-            "src_loc":  src_loc,
+            "tests": [],
+            "bodies": [],
+            "src_loc": src_loc,
             "src_locs": [],
         })
         try:
@@ -285,12 +289,14 @@ class Module(_ModuleBuilderRoot, Elaboratable):
     @contextmanager
     def Switch(self, test):
         self._check_context("Switch", context=None)
-        switch_data = self._set_ctrl("Switch", {
-            "test":    Value.cast(test),
-            "cases":   OrderedDict(),
-            "src_loc": tracer.get_src_loc(src_loc_at=1),
-            "case_src_locs": {},
-        })
+        switch_data = self._set_ctrl(
+            "Switch", {
+                "test": Value.cast(test),
+                "cases": OrderedDict(),
+                "src_loc": tracer.get_src_loc(src_loc_at=1),
+                "case_src_locs": {},
+            }
+        )
         try:
             self._ctrl_context = "Switch"
             self.domain._depth += 1
@@ -308,30 +314,34 @@ class Module(_ModuleBuilderRoot, Elaboratable):
         new_patterns = ()
         for pattern in patterns:
             if not isinstance(pattern, (int, str, Enum)):
-                raise SyntaxError("Case pattern must be an integer, a string, or an enumeration, "
-                                  "not {!r}"
-                                  .format(pattern))
+                raise SyntaxError("Case pattern must be an integer, a string, or an enumeration, " "not {!r}".format(pattern))
             if isinstance(pattern, str) and any(bit not in "01- \t" for bit in pattern):
-                raise SyntaxError("Case pattern '{}' must consist of 0, 1, and - (don't care) "
-                                  "bits, and may include whitespace"
-                                  .format(pattern))
-            if (isinstance(pattern, str) and
-                    len("".join(pattern.split())) != len(switch_data["test"])):
-                raise SyntaxError("Case pattern '{}' must have the same width as switch value "
-                                  "(which is {})"
-                                  .format(pattern, len(switch_data["test"])))
+                raise SyntaxError(
+                    "Case pattern '{}' must consist of 0, 1, and - (don't care) "
+                    "bits, and may include whitespace".format(pattern)
+                )
+            if (isinstance(pattern, str) and len("".join(pattern.split())) != len(switch_data["test"])):
+                raise SyntaxError(
+                    "Case pattern '{}' must have the same width as switch value "
+                    "(which is {})".format(pattern, len(switch_data["test"]))
+                )
             if isinstance(pattern, int) and bits_for(pattern) > len(switch_data["test"]):
-                warnings.warn("Case pattern '{:b}' is wider than switch value "
-                              "(which has width {}); comparison will never be true"
-                              .format(pattern, len(switch_data["test"])),
-                              SyntaxWarning, stacklevel=3)
+                warnings.warn(
+                    "Case pattern '{:b}' is wider than switch value "
+                    "(which has width {}); comparison will never be true".format(pattern, len(switch_data["test"])),
+                    SyntaxWarning,
+                    stacklevel=3
+                )
                 continue
             if isinstance(pattern, Enum) and bits_for(pattern.value) > len(switch_data["test"]):
-                warnings.warn("Case pattern '{:b}' ({}.{}) is wider than switch value "
-                              "(which has width {}); comparison will never be true"
-                              .format(pattern.value, pattern.__class__.__name__, pattern.name,
-                                      len(switch_data["test"])),
-                              SyntaxWarning, stacklevel=3)
+                warnings.warn(
+                    "Case pattern '{:b}' ({}.{}) is wider than switch value "
+                    "(which has width {}); comparison will never be true".format(
+                        pattern.value, pattern.__class__.__name__, pattern.name, len(switch_data["test"])
+                    ),
+                    SyntaxWarning,
+                    stacklevel=3
+                )
                 continue
             new_patterns = (*new_patterns, pattern)
         try:
@@ -357,17 +367,19 @@ class Module(_ModuleBuilderRoot, Elaboratable):
         self._check_context("FSM", context=None)
         if domain == "comb":
             raise ValueError("FSM may not be driven by the '{}' domain".format(domain))
-        fsm_data = self._set_ctrl("FSM", {
-            "name":     name,
-            "signal":   Signal(name="{}_state".format(name), src_loc_at=2),
-            "reset":    reset,
-            "domain":   domain,
-            "encoding": OrderedDict(),
-            "decoding": OrderedDict(),
-            "states":   OrderedDict(),
-            "src_loc":  tracer.get_src_loc(src_loc_at=1),
-            "state_src_locs": {},
-        })
+        fsm_data = self._set_ctrl(
+            "FSM", {
+                "name": name,
+                "signal": Signal(name="{}_state".format(name), src_loc_at=2),
+                "reset": reset,
+                "domain": domain,
+                "encoding": OrderedDict(),
+                "decoding": OrderedDict(),
+                "states": OrderedDict(),
+                "src_loc": tracer.get_src_loc(src_loc_at=1),
+                "state_src_locs": {},
+            }
+        )
         self._generated[name] = fsm = \
             FSM(fsm_data["signal"], fsm_data["encoding"], fsm_data["decoding"])
         try:
@@ -376,8 +388,7 @@ class Module(_ModuleBuilderRoot, Elaboratable):
             yield fsm
             for state_name in fsm_data["encoding"]:
                 if state_name not in fsm_data["states"]:
-                    raise NameError("FSM state '{}' is referenced but not defined"
-                                    .format(state_name))
+                    raise NameError("FSM state '{}' is referenced but not defined".format(state_name))
         finally:
             self.domain._depth -= 1
             self._ctrl_context = None
@@ -417,7 +428,8 @@ class Module(_ModuleBuilderRoot, Elaboratable):
                     self._add_statement(
                         assigns=[ctrl_data["signal"].eq(ctrl_data["encoding"][name])],
                         domain=ctrl_data["domain"],
-                        depth=len(self._ctrl_stack))
+                        depth=len(self._ctrl_stack)
+                    )
                     return
 
         raise SyntaxError("`m.next = <...>` is only permitted inside an FSM state")
@@ -444,15 +456,13 @@ class Module(_ModuleBuilderRoot, Elaboratable):
                     match = None
                 cases[match] = if_case
 
-            self._statements.append(Switch(Cat(tests), cases,
-                src_loc=src_loc, case_src_locs=dict(zip(cases, if_src_locs))))
+            self._statements.append(Switch(Cat(tests), cases, src_loc=src_loc, case_src_locs=dict(zip(cases, if_src_locs))))
 
         if name == "Switch":
             switch_test, switch_cases = data["test"], data["cases"]
             switch_case_src_locs = data["case_src_locs"]
 
-            self._statements.append(Switch(switch_test, switch_cases,
-                src_loc=src_loc, case_src_locs=switch_case_src_locs))
+            self._statements.append(Switch(switch_test, switch_cases, src_loc=src_loc, case_src_locs=switch_case_src_locs))
 
         if name == "FSM":
             fsm_signal, fsm_reset, fsm_encoding, fsm_decoding, fsm_states = \
@@ -468,10 +478,15 @@ class Module(_ModuleBuilderRoot, Elaboratable):
             # The FSM is encoded such that the state with encoding 0 is always the reset state.
             fsm_decoding.update((n, s) for s, n in fsm_encoding.items())
             fsm_signal.decoder = lambda n: "{}/{}".format(fsm_decoding[n], n)
-            self._statements.append(Switch(fsm_signal,
-                OrderedDict((fsm_encoding[name], stmts) for name, stmts in fsm_states.items()),
-                src_loc=src_loc, case_src_locs={fsm_encoding[name]: fsm_state_src_locs[name]
-                                                for name in fsm_states}))
+            self._statements.append(
+                Switch(
+                    fsm_signal,
+                    OrderedDict((fsm_encoding[name], stmts) for name, stmts in fsm_states.items()),
+                    src_loc=src_loc,
+                    case_src_locs={fsm_encoding[name]: fsm_state_src_locs[name]
+                                   for name in fsm_states}
+                )
+            )
 
     def _add_statement(self, assigns, domain, depth, compat_mode=False):
         def domain_name(domain):
@@ -485,9 +500,7 @@ class Module(_ModuleBuilderRoot, Elaboratable):
 
         for stmt in Statement.cast(assigns):
             if not compat_mode and not isinstance(stmt, (Assign, Assert, Assume, Cover)):
-                raise SyntaxError(
-                    "Only assignments and property checks may be appended to d.{}"
-                    .format(domain_name(domain)))
+                raise SyntaxError("Only assignments and property checks may be appended to d.{}".format(domain_name(domain)))
 
             stmt._MustUse__used = True
             stmt = SampleDomainInjector(domain)(stmt)
@@ -499,15 +512,14 @@ class Module(_ModuleBuilderRoot, Elaboratable):
                     cd_curr = self._driving[signal]
                     raise SyntaxError(
                         "Driver-driver conflict: trying to drive {!r} from d.{}, but it is "
-                        "already driven from d.{}"
-                        .format(signal, domain_name(domain), domain_name(cd_curr)))
+                        "already driven from d.{}".format(signal, domain_name(domain), domain_name(cd_curr))
+                    )
 
             self._statements.append(stmt)
 
     def _add_submodule(self, submodule, name=None):
         if not hasattr(submodule, "elaborate"):
-            raise TypeError("Trying to add {!r}, which does not implement .elaborate(), as "
-                            "a submodule".format(submodule))
+            raise TypeError("Trying to add {!r}, which does not implement .elaborate(), as " "a submodule".format(submodule))
         if name == None:
             self._anon_submodules.append(submodule)
         else:
